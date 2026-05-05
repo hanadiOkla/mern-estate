@@ -7,9 +7,11 @@ import {
 } from "firebase/storage";
 import { app } from "../firebase";
 import { useSelector }  from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 
 export default function CreateListing() {
-  const {currentUser} = useSelector(state => state.user)
+  const {currentUser} = useSelector(state => state.user);
+  const navigate = useNavigate();
   const [files, setFiles] = useState([]);
   const [formData, setFormData] = useState({
     imageUrls: [],
@@ -20,7 +22,7 @@ export default function CreateListing() {
     bathrooms:1,
     bedrooms:1,
     regularPrice:50,
-    discountPrice:50,
+    discountPrice:0,
     offer:false,
     parking:false,
     furnished:false
@@ -115,6 +117,8 @@ export default function CreateListing() {
     e.preventDefault();
     try{
       if( formData.imageUrls.length < 1 ) return setError('You must upload at lest one image');
+      if( +formData.regularPrice < +formData.discountPrice ) return setError('Discount price must be lower than regular price');
+
       setLoading(true);
       setError(false);
       const res =  await fetch('/api/listing/create' , {
@@ -132,7 +136,7 @@ export default function CreateListing() {
       if ( data.success ===  false ){
         setError(data.message);
       }  
-
+      navigate(`/listing/${data._id}`);
     }catch(error){
       setError(error.message);
       setLoading(false);
@@ -229,7 +233,7 @@ export default function CreateListing() {
                 type="number"
                 id="regularPrice"
                 min="50"
-                max='1000000'
+                max='100000000'
                 required
                 className="p-3 border border-gray-200 rounded-lg"
                 onChange={handelChange}
@@ -240,12 +244,14 @@ export default function CreateListing() {
                 <span className="text-xs">($ / Month)</span>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            
+            { formData.offer && (
+                          <div className="flex items-center gap-2">
               <input
                 type="number"
                 id="discountPrice"
                 min="0"
-                max='1000000'
+                max='1000000000'
                 required
                 className="p-3 border border-gray-200 rounded-lg"
                 onChange={handelChange}
@@ -256,6 +262,9 @@ export default function CreateListing() {
                 <span className="text-xs">($ / Month)</span>
               </div>
             </div>
+
+            ) }
+
           </div>
         </div>
         <div className="flex flex-col flex-1 gap-4">
@@ -306,7 +315,7 @@ export default function CreateListing() {
                 </button>
               </div>
             ))}
-          <button className="p-3 bg-slate-700 text-white rounded-lg uppercase hover:opacity-95 disabled:opacity-80">
+          <button disabled={ loading || uploading } className="p-3 bg-slate-700 text-white rounded-lg uppercase hover:opacity-95 disabled:opacity-80">
             {loading ? 'Createing...' : 'Create Listing'}
             
           </button>
