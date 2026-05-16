@@ -30,7 +30,7 @@ export default function Contact({listing}) {
             <textarea 
                 name="message" 
                 id="message" 
-                rows='5' 
+                rows='2' 
                 value={message} 
                 onChange={onChange}
                 placeholder='Enter your message here...'
