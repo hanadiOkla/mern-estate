@@ -1,7 +1,7 @@
 import {FaSearch } from'react-icons/fa';
 import {Link, useNavigate} from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 
 function Header() {
@@ -14,7 +14,15 @@ function Header() {
     urlParams.set('searchTerm' ,searchTerm);
     const searchQuery = urlParams.toString();
     navigate(`/search?${searchQuery}`);
-  }
+  };
+
+  useEffect( () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const searchTermFormUrl = urlParams.get('searchTerm');
+    if(searchTermFormUrl){
+      setSearchTerm
+    }
+  })
   return (
     <header className='bg-slate-200 shadow-md'>
       <div className='flex justify-between items-center max-w-6xl mx-auto p-3'>
