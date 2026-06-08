@@ -2,6 +2,52 @@
 @tailwind components;
 @tailwind utilities;
 
-body{
-    background-color: rgb(241, 245, 241);
+/* كود التعديل الجذري والمضمون لأسهم السويبر */
+/* إخفاء أسهم Swiper الافتراضية تماماً لمنع تكرارها */
+.swiper-button-next,
+.swiper-button-prev {
+  display: none !important;
+}
+
+
+/* حل مشكلة اختفاء أسهم Swiper في صفحة الـ Listing */
+.custom-swiper-container {
+  position: relative;
+}
+
+/* تخصيص السهم الأيمن والأيسر وإظهارهما فوق الصورة */
+.custom-swiper-container .swiper-button-next,
+.custom-swiper-container .swiper-button-prev {
+  background-color: rgba(255, 255, 255, 0.9) !important; /* خلفية بيضاء شبه شفافة */
+  width: 44px !important;
+  height: 44px !important;
+  border-radius: 50% !important;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15) !important;
+  z-index: 99 !important; /* رفع الزر فوق الصورة لمنع اختفائه */
+  opacity: 1 !important; /* إجبار السهم على الظهور */
+  visibility: visible !important;
+  transition: all 0.3s ease;
+}
+
+/* ضبط حجم ولون السهم الداخلي (الـ وحيد القرن < أو >) */
+.custom-swiper-container .swiper-button-next::after,
+.custom-swiper-container .swiper-button-prev::after {
+  font-size: 16px !important;
+  font-weight: bold !important;
+  color: #1e293b !important; /* لون كحلي داكن وواضح جداً */
+}
+
+/* تأثير عند تمرير الماوس فوق السهم */
+.custom-swiper-container .swiper-button-next:hover,
+.custom-swiper-container .swiper-button-prev:hover {
+  background-color: #ffffff !important;
+  transform: scale(1.08);
+}
+
+/* تحريك الأسهم قليلاً للداخل حتى لا تخرج عن الحواف */
+.custom-swiper-container .swiper-button-next {
+  right: 20px !important;
+}
+.custom-swiper-container .swiper-button-prev {
+  left: 20px !important;
 }
