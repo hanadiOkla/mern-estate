@@ -27,10 +27,20 @@ export default function CreateListing() {
     parking: false,
     furnished: false,
   });
+  
   const [imageUploadError, setImageUploadError] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // AI Description Generation States
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState(null);
+
+  // AI Valuation States
+  const [valLoading, setValLoading] = useState(false);
+  const [valError, setValError] = useState(null);
+  const [valuation, setValuation] = useState(null);
 
   const handleImageSubmit = (e) => {
     if (files.length > 0 && files.length + formData.imageUrls.length < 7) {
@@ -154,11 +164,94 @@ export default function CreateListing() {
     }
   };
 
+  // Handles AI smart description generation
+  const handleGenerateAI = async () => {
+    try {
+      // Professional Inline Validation instead of alert()
+      if (!formData.name || !formData.address || !formData.type) {
+        setAiError('⚠️ Please fill out Name, Address, and Type first to generate a smart description.');
+        return;
+      }
+
+      setAiLoading(true);
+      setAiError(null);
+
+      // credentials: 'include' added to fix 401 Unauthorized errors
+      const res = await fetch('/api/listing/generate-ai', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(formData),
+      });
+
+      const data = await res.json();
+
+      if (data.success === false) {
+        setAiError(data.message);
+        setAiLoading(false);
+        return;
+      }
+
+      setFormData({
+        ...formData,
+        description: data.description,
+      });
+      
+      setAiLoading(false);
+    } catch (error) {
+      setAiError(error.message);
+      setAiLoading(false);
+    }
+  };
+
+  // Handles AI property valuation request
+  const handleAIValuation = async (e) => {
+    e.preventDefault();
+    
+    // Professional Inline Validation instead of alert()
+    if (!formData.address || !formData.type) {
+      setValError('⚠️ Address and Property Type are required for the AI to analyze valuation.');
+      return;
+    }
+
+    try {
+      setValLoading(true);
+      setValError(null);
+      setValuation(null);
+
+      // credentials: 'include' added to fix 401 Unauthorized errors
+      const res = await fetch('/api/listing/evaluate-ai', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(formData),
+      });
+
+      const data = await res.json();
+
+      if (data.success === false) {
+        setValError(data.message);
+        setValLoading(false);
+        return;
+      }
+
+      setValuation(data.valuation);
+      setValLoading(false);
+    } catch (err) {
+      setValError('Connection error occurred while fetching AI Valuation.');
+      setValLoading(false);
+    }
+  };
+
   return (
     <div className='bg-slate-50/50 min-h-screen py-12 px-4 md:px-8'>
       <main className='max-w-6xl mx-auto flex flex-col gap-8'>
         
-        {/* العناوين الرئيسية */}
+        {/* Main Header */}
         <div>
           <h1 className='text-3xl font-extrabold text-slate-900 tracking-tight'>Create a Listing</h1>
           <p className='text-sm text-slate-400 mt-1'>Fill out the details below to publish your property to the marketplace.</p>
@@ -166,12 +259,12 @@ export default function CreateListing() {
 
         <form onSubmit={handleSubmit} className='grid grid-cols-1 lg:grid-cols-12 gap-8 items-start'>
           
-          {/* القسم الأيسر: تفاصيل العقار وخياراته */}
+          {/* Left Column: Property Details & Options */}
           <div className='lg:col-span-7 bg-white p-6 md:p-8 rounded-3xl shadow-xl shadow-slate-200/40 border border-slate-100 flex flex-col gap-5'>
             
             <h2 className='text-lg font-bold text-slate-800 border-b border-slate-100 pb-3 flex items-center gap-2'>
               <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2-2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
               </svg>
               Property Information
             </h2>
@@ -192,9 +285,18 @@ export default function CreateListing() {
             </div>
 
             <div className='flex flex-col gap-1.5'>
-              <label className='text-xs font-bold text-slate-700 tracking-wide ml-1'>Description</label>
+              <div className='flex justify-between items-center flex-wrap gap-2'>
+                <label className='text-xs font-bold text-slate-700 tracking-wide ml-1'>Description</label>
+                <button
+                  type='button'
+                  disabled={aiLoading}
+                  onClick={handleGenerateAI}
+                  className='bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-3 py-1.5 rounded-xl text-xs font-semibold uppercase hover:opacity-95 disabled:opacity-80 flex items-center gap-2 shadow-sm transition'
+                >
+                  {aiLoading ? 'Generating... ✨' : 'Generate AI Description ✨'}
+                </button>
+              </div>
               <textarea
-                type='text'
                 placeholder='Describe the property features, neighborhood, utilities...'
                 className='border border-slate-200 rounded-xl p-3.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all bg-slate-50/20 min-h-[120px]'
                 id='description'
@@ -202,6 +304,12 @@ export default function CreateListing() {
                 onChange={handleChange}
                 value={formData.description}
               />
+              {/* Modern AI Error Message for Description */}
+              {aiError && (
+                <div className='bg-amber-50 text-amber-700 text-xs font-semibold p-3 rounded-xl border border-amber-200/70 mt-1 animate-fadeIn'>
+                  {aiError}
+                </div>
+              )}
             </div>
 
             <div className='flex flex-col gap-1.5'>
@@ -217,7 +325,7 @@ export default function CreateListing() {
               />
             </div>
 
-            {/* صناديق الاختيار المعدلة بالكامل */}
+            {/* Amenities & Checkboxes */}
             <div className='bg-slate-50/50 p-4 rounded-2xl border border-slate-100 mt-2'>
               <p className='text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 ml-1'>Amenities & Options</p>
               <div className='flex gap-5 flex-wrap'>
@@ -278,7 +386,7 @@ export default function CreateListing() {
               </div>
             </div>
 
-            {/* الغرف والأسعار الرقمية */}
+            {/* Numeric Fields */}
             <div className='grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4 mt-2'>
               <div className='flex flex-col gap-1.5'>
                 <label className='text-xs font-bold text-slate-600 ml-1'>Beds</label>
@@ -343,9 +451,59 @@ export default function CreateListing() {
               )}
             </div>
 
+            {/* AI Valuation Section (Arabic UI Content) */}
+            <div className='bg-slate-50 p-5 rounded-2xl border border-slate-200 shadow-sm mt-3' dir="rtl">
+              <div className='flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-2'>
+                <div className='flex items-center gap-2'>
+                  <span className='text-xl'>💡</span>
+                  <h3 className='text-sm font-bold text-slate-800'>هل تحتار في تحديد السعر العادل لعقارك؟</h3>
+                </div>
+                <button
+                  type='button'
+                  onClick={handleAIValuation}
+                  disabled={valLoading}
+                  className='bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold rounded-xl text-xs px-4 py-2.5 hover:opacity-95 shadow-sm transition-all disabled:opacity-50'
+                >
+                  {valLoading ? 'جاري التحليل المالي...' : '✨ اقترح عليّ سعراً عادلاً (AI Valuation)'}
+                </button>
+              </div>
+
+              {/* Inline Error for AI Valuation */}
+              {valError && (
+                <div className='bg-amber-50 text-amber-700 text-xs font-semibold p-3 rounded-xl border border-amber-200/70 mt-3 text-right'>
+                  {valError}
+                </div>
+              )}
+
+              {valuation && (
+                <div className='flex flex-col gap-3 text-right bg-white p-4 rounded-xl border border-slate-100 mt-4 animate-fadeIn'>
+                  <div>
+                    <p className='text-xs text-slate-400 mb-1'>القيمة السوقية المقترحة من الـ AI لهذا العقار:</p>
+                    <p className='text-lg font-bold text-emerald-600 font-mono' dir="ltr">
+                      ${valuation.estimatedMinPrice?.toLocaleString()} - ${valuation.estimatedMaxPrice?.toLocaleString()}
+                    </p>
+                    <p className='text-[10px] text-slate-400 mt-1 leading-relaxed'>
+                      * يعتمد هذا النطاق الاسترشادي على تحليل مواصفات العقار المدخلة وعنوان المنطقة الجغرافية.
+                    </p>
+                  </div>
+                  
+                  <div className='border-t border-slate-100 pt-3 grid grid-cols-1 md:grid-cols-2 gap-3'>
+                    <div className='bg-slate-50/70 p-3 rounded-xl border border-slate-100'>
+                      <h4 className='font-bold text-slate-700 text-xs mb-1'>📈 اتجاهات السوق في المنطقة:</h4>
+                      <p className='text-slate-600 text-xs leading-relaxed'>{valuation.marketTrend}</p>
+                    </div>
+                    <div className='bg-slate-50/70 p-3 rounded-xl border border-slate-100'>
+                      <h4 className='font-bold text-slate-700 text-xs mb-1'>🎯 نصيحة استراتيجية للتسعير:</h4>
+                      <p className='text-slate-600 text-xs leading-relaxed'>{valuation.investmentAdvice}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
           </div>
 
-          {/* القسم الأيمن: رفع الصور والاعتماد النهائي */}
+          {/* Right Column: Media & Publish */}
           <div className='lg:col-span-5 flex flex-col gap-6'>
             
             <div className='bg-white p-6 md:p-8 rounded-3xl shadow-xl shadow-slate-200/40 border border-slate-100 flex flex-col gap-5'>
@@ -358,7 +516,7 @@ export default function CreateListing() {
               
               <div>
                 <p className='text-xs font-bold text-slate-700 tracking-wide mb-1'>Upload Images</p>
-                <p className='text-xs text-slate-400 mb-3'>The first image will be set as the main cover cover (Max 6 images).</p>
+                <p className='text-xs text-slate-400 mb-3'>The first image will be set as the main cover (Max 6 images).</p>
                 
                 <div className='flex gap-3'>
                   <input
@@ -381,9 +539,9 @@ export default function CreateListing() {
                 {imageUploadError && <p className='text-red-500 text-xs font-medium mt-2 bg-red-50 p-2 rounded-lg text-center'>{imageUploadError}</p>}
               </div>
 
-              {/* شبكة استعراض الصور المرفوعة */}
+              {/* Preview Grid */}
               {formData.imageUrls.length > 0 && (
-                <div className='flex flex-col gap-2.5 bg-slate-50/50 p-3 rounded-2xl border border-slate-100 max-h-[280px] overflow-y-auto'>
+                <div className='grid grid-cols-1 gap-2.5 bg-slate-50/50 p-3 rounded-2xl border border-slate-100 max-h-[280px] overflow-y-auto'>
                   {formData.imageUrls.map((url, index) => (
                     <div
                       key={url}
@@ -392,12 +550,12 @@ export default function CreateListing() {
                       <div className='flex items-center gap-3 truncate'>
                         <img
                           src={url}
-                          alt='listing image'
+                          alt='listing'
                           className='w-14 h-14 object-cover rounded-lg border border-slate-100'
                         />
-                        {index === 0 && (
-                          <span className='bg-blue-50 text-blue-600 text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase border border-blue-100'>Cover</span>
-                        )}
+                        <span className='text-xs font-medium text-slate-500'>
+                          {index === 0 ? '🏆 Cover' : `Image ${index + 1}`}
+                        </span>
                       </div>
                       <button
                         type='button'
@@ -411,7 +569,6 @@ export default function CreateListing() {
                 </div>
               )}
 
-              {/* الأزرار النهائية وحالة الطلب */}
               <div className='flex flex-col gap-3 mt-2'>
                 <button
                   disabled={loading || uploading}
@@ -421,11 +578,8 @@ export default function CreateListing() {
                 </button>
                 {error && <p className='text-red-500 text-xs font-medium text-center mt-1 bg-red-50 p-2 rounded-lg border border-red-100'>{error}</p>}
               </div>
-
             </div>
-
           </div>
-
         </form>
       </main>
     </div>

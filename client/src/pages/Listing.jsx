@@ -25,6 +25,12 @@ export default function Listing() {
   const [copied, setCopied] = useState(false);
   const [contact, setContact] = useState(false);
   
+  // --- States for AI---
+  const [valuation, setValuation] = useState(null);
+  const [valLoading, setValLoading] = useState(false);
+  const [valError, setValError] = useState(null);
+  // --------------------------------------------------
+  
   const prevRef = useRef(null);
   const nextRef = useRef(null);
   const [swiperInstance, setSwiperInstance] = useState(null);
@@ -53,6 +59,42 @@ export default function Listing() {
     };
     fetchListing();
   }, [params.listingId]);
+
+  // 2. الأثر البيئي الجديد: استدعاء تقييم الـ AI بمجرد تحميل بيانات العقار بنجاح
+  useEffect(() => {
+    const fetchAIValuation = async () => {
+      if (!listing) return; // لا نرسل طلب إذا لم تكن البيانات جاهزة بعد
+      
+      try {
+        setValLoading(true);
+        setValError(null);
+        
+        const res = await fetch('/api/listing/evaluate-ai', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(listing), // تمرير بيانات العقار الحالية ليحللها الـ Backend
+        });
+        
+        const data = await res.json();
+        
+        if (data.success === false) {
+          setValError(data.message);
+          setValLoading(false);
+          return;
+        }
+        
+        setValuation(data.valuation);
+        setValLoading(false);
+      } catch (err) {
+        setValError(err.message);
+        setValLoading(false);
+      }
+    };
+
+    fetchAIValuation();
+  }, [listing]);
 
   useEffect(() => {
     if (swiperInstance && swiperInstance.params) {
@@ -170,6 +212,70 @@ export default function Listing() {
               <h3 className='font-bold text-slate-900 mb-1'>Description</h3>
               <p className='text-sm text-slate-600'>{listing.description}</p>
             </div>
+
+            {/* ========================================================================= */}
+            {/* 🌟 إضافة لوحة التقييم العقاري بالذكاء الاصطناعي (AI Valuation Dashboard) 🌟 */}
+            {/* ========================================================================= */}
+            <div className='bg-slate-50 p-5 rounded-xl border border-slate-200 shadow-sm my-2' dir="rtl">
+              <div className='flex items-center gap-2 mb-4'>
+                <span className='text-xl'>✨</span>
+                <h3 className='text-lg font-bold text-slate-800 font-sans'>التحليل المالي والتقييم الذكي (AI Valuation)</h3>
+              </div>
+
+              {valLoading && (
+                <p className='text-slate-500 animate-pulse text-xs text-right'>
+                  جاري تحليل أسعار الحي وحساب القيمة السوقية العادلة للعقار...
+                </p>
+              )}
+              
+              {valError && (
+                <p className='text-red-500 text-xs text-right'>
+                  تعذر تحميل التقييم الذكي حالياً (تأكد من تفعيل السيرفر والرصيد).
+                </p>
+              )}
+
+              {valuation && (
+                <div className='flex flex-col gap-4 text-right'>
+                  {/* نطاق السعر والبادج الذكي */}
+                  <div className='grid grid-cols-1 md:grid-cols-2 gap-4 items-center bg-white p-4 rounded-lg border border-slate-100'>
+                    <div>
+                      <p className='text-xs text-slate-400 mb-1'>القيمة التقديرية العادلة في السوق:</p>
+                      <p className='text-base font-bold text-slate-700 font-mono' dir="ltr">
+                        ${valuation.estimatedMinPrice?.toLocaleString()} - ${valuation.estimatedMaxPrice?.toLocaleString()}
+                      </p>
+                    </div>
+                    
+                    <div className='flex md:justify-end mt-2 md:mt-0'>
+                      <span className={`px-3 py-1.5 rounded-full font-bold text-xs shadow-sm ${
+                        valuation.priceStatus === 'Good Deal' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' :
+                        valuation.priceStatus === 'Fair Price' ? 'bg-blue-100 text-blue-800 border border-blue-200' :
+                        valuation.priceStatus === 'Overpriced' ? 'bg-rose-100 text-rose-800 border border-rose-200' :
+                        'bg-slate-100 text-slate-800'
+                      }`}>
+                        {valuation.priceStatus === 'Good Deal' && '🔥 صفقة لُقطة (أقل من سعر السوق)'}
+                        {valuation.priceStatus === 'Fair Price' && '✅ سعر عادل ومتوافق مع السوق'}
+                        {valuation.priceStatus === 'Overpriced' && '⚠️ سعر مرتفع عن متوسط المنطقة'}
+                        {valuation.priceStatus === 'Unknown' && 'ℹ️ لا يوجد سعر معروض للمقارنة'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* اتجاهات السوق والنصيحة الاستثمارية */}
+                  <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                    <div className='bg-white p-4 rounded-lg border border-slate-100'>
+                      <h4 className='font-bold text-slate-700 text-xs mb-1.5 flex items-center gap-1'>📈 مستقبل الحي (3-5 سنوات):</h4>
+                      <p className='text-slate-600 text-xs leading-relaxed'>{valuation.marketTrend}</p>
+                    </div>
+                    
+                    <div className='bg-white p-4 rounded-lg border border-slate-100'>
+                      <h4 className='font-bold text-slate-700 text-xs mb-1.5 flex items-center gap-1'>🎯 النصيحة الاستثمارية للمشتري:</h4>
+                      <p className='text-slate-600 text-xs leading-relaxed'>{valuation.investmentAdvice}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+            {/* ========================================================================= */}
 
             <ul className='text-slate-700 font-medium text-sm flex flex-wrap items-center gap-4 sm:gap-6 border-t border-b border-slate-100 py-4'>
               <li className='flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-md border border-slate-100'>

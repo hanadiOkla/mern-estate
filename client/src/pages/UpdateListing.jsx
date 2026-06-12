@@ -33,9 +33,18 @@ export default function UpdateListing() {
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // حالتان للتحكم في النافذة المنبثقة وصورة المستهدف حذفها
+  // Modal states for deleting pictures
   const [showModal, setShowModal] = useState(false);
   const [imageIndexToDelete, setImageIndexToDelete] = useState(null);
+
+  // AI Description Generation States
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState(null);
+
+  // AI Valuation States
+  const [valLoading, setValLoading] = useState(false);
+  const [valError, setValError] = useState(null);
+  const [valuation, setValuation] = useState(null);
 
   useEffect(() => {
     const fetchListing = async () => {
@@ -68,7 +77,7 @@ export default function UpdateListing() {
           });
           setImageUploadError(false);
           setUploading(false);
-        })
+         })
         .catch((err) => {
           setImageUploadError('Image upload failed (2 mb max per image)');
           setUploading(false);
@@ -101,13 +110,11 @@ export default function UpdateListing() {
     });
   };
 
-  // 1. عند الضغط على زر الحذف، نفتح الـ Modal ونحفظ مكان الصورة المحددة
   const triggerDeleteModal = (index) => {
     setImageIndexToDelete(index);
     setShowModal(true);
   };
 
-  // 2. عند تأكيد الحذف من داخل الـ Modal الجديد
   const handleConfirmDelete = () => {
     if (imageIndexToDelete !== null) {
       setFormData({
@@ -163,175 +170,436 @@ export default function UpdateListing() {
     }
   };
 
-  return (
-    <main className='p-6 max-w-5xl mx-auto bg-slate-50 min-h-screen pb-16 relative'>
-      <h1 className='text-3xl font-bold text-center my-8 text-slate-800 tracking-tight'>
-        Update Your Listing
-      </h1>
+  // Handles AI smart description generation
+  const handleGenerateAI = async () => {
+    try {
+      // [تحديث احترافي]: استبدال الـ alert بـ inline error منسق
+      if (!formData.name || !formData.address || !formData.type) {
+        setAiError('⚠️ يرجى ملء حقول (اسم العقار، العنوان، ونوع العقار) أولاً لتوليد الوصف الذكي.');
+        return;
+      }
+
+      setAiLoading(true);
+      setAiError(null);
+
+      // [تعديل الأمان]: إضافة credentials: 'include' لتفادي خطأ 401 Unauthorized
+      const res = await fetch('/api/listing/generate-ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(formData),
+      });
+
+      const data = await res.json();
+
+      if (data.success === false) {
+        setAiError(data.message);
+        setAiLoading(false);
+        return;
+      }
+
+      setFormData({
+        ...formData,
+        description: data.description,
+      });
       
-      <form onSubmit={handleSubmit} className='flex flex-col md:flex-row gap-6 bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-slate-100'>
+      setAiLoading(false);
+    } catch (error) {
+      setAiError(error.message);
+      setAiLoading(false);
+    }
+  };
+
+  // Handles AI property valuation request
+  const handleAIValuation = async (e) => {
+    e.preventDefault();
+    
+    // [تحديث احترافي]: استبدال الـ alert بـ inline error منسق في كرت التقييم
+    if (!formData.address || !formData.type) {
+      setValError('⚠️ يرجى تحديد نوع العقار والعنوان الجغرافي أولاً ليتمكن النظام من تحليل الأسعار.');
+      return;
+    }
+
+    try {
+      setValLoading(true);
+      setValError(null);
+      setValuation(null);
+
+      // [تعديل الأمان]: إضافة credentials: 'include' لتفادي خطأ 401 Unauthorized
+      const res = await fetch('/api/listing/evaluate-ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(formData),
+      });
+
+      const data = await res.json();
+
+      if (data.success === false) {
+        setValError(data.message);
+        setValLoading(false);
+        return;
+      }
+
+      setValuation(data.valuation);
+      setValLoading(false);
+    } catch (err) {
+      setValError('An error occurred while connecting to the server for AI Valuation.');
+      setValLoading(false);
+    }
+  };
+
+  return (
+    <div className='bg-slate-50/50 min-h-screen py-12 px-4 md:px-8'>
+      <main className='max-w-6xl mx-auto flex flex-col gap-8'>
         
-        {/* القسم الأيسر: الحقول النصية والخصائص */}
-        <div className='flex flex-col gap-5 flex-1'>
-          <div className='flex flex-col gap-1'>
-            <label className='text-sm font-semibold text-slate-700'>Property Title</label>
-            <input
-              type='text'
-              placeholder='e.g., Modern Apartment with Sea View'
-              className='border border-slate-200 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-slate-50/50 transition-all text-sm'
-              id='name'
-              maxLength='62'
-              minLength='10'
-              required
-              onChange={handleChange}
-              value={formData.name}
-            />
-          </div>
-
-          <div className='flex flex-col gap-1'>
-            <label className='text-sm font-semibold text-slate-700'>Description</label>
-            <textarea
-              placeholder='Describe the property features, neighborhood, etc...'
-              className='border border-slate-200 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-slate-50/50 transition-all text-sm min-h-[120px]'
-              id='description'
-              required
-              onChange={handleChange}
-              value={formData.description}
-            />
-          </div>
-
-          <div className='flex flex-col gap-1'>
-            <label className='text-sm font-semibold text-slate-700'>Address</label>
-            <input
-              type='text'
-              placeholder='Full location address'
-              className='border border-slate-200 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-slate-50/50 transition-all text-sm'
-              id='address'
-              required
-              onChange={handleChange}
-              value={formData.address}
-            />
-          </div>
-
-          <div className='flex gap-3 flex-wrap my-2 bg-slate-50 p-4 rounded-xl border border-slate-100'>
-            <label className={`flex items-center gap-2 px-4 py-2 rounded-lg border cursor-pointer select-none transition-all text-sm ${formData.type === 'sale' ? 'bg-blue-50 border-blue-200 text-blue-700 font-medium' : 'bg-white border-slate-200 text-slate-600'}`}>
-              <input type='checkbox' id='sale' className='w-4 h-4 accent-blue-600 hidden' onChange={handleChange} checked={formData.type === 'sale'} />
-              Sell
-            </label>
-            <label className={`flex items-center gap-2 px-4 py-2 rounded-lg border cursor-pointer select-none transition-all text-sm ${formData.type === 'rent' ? 'bg-blue-50 border-blue-200 text-blue-700 font-medium' : 'bg-white border-slate-200 text-slate-600'}`}>
-              <input type='checkbox' id='rent' className='w-4 h-4 accent-blue-600 hidden' onChange={handleChange} checked={formData.type === 'rent'} />
-              Rent
-            </label>
-            <label className={`flex items-center gap-2 px-4 py-2 rounded-lg border cursor-pointer select-none transition-all text-sm ${formData.parking ? 'bg-blue-50 border-blue-200 text-blue-700 font-medium' : 'bg-white border-slate-200 text-slate-600'}`}>
-              <input type='checkbox' id='parking' className='w-4 h-4 accent-blue-600' onChange={handleChange} checked={formData.parking} />
-              Parking spot
-            </label>
-            <label className={`flex items-center gap-2 px-4 py-2 rounded-lg border cursor-pointer select-none transition-all text-sm ${formData.furnished ? 'bg-blue-50 border-blue-200 text-blue-700 font-medium' : 'bg-white border-slate-200 text-slate-600'}`}>
-              <input type='checkbox' id='furnished' className='w-4 h-4 accent-blue-600' onChange={handleChange} checked={formData.furnished} />
-              Furnished
-            </label>
-            <label className={`flex items-center gap-2 px-4 py-2 rounded-lg border cursor-pointer select-none transition-all text-sm ${formData.offer ? 'bg-emerald-50 border-emerald-200 text-emerald-700 font-medium' : 'bg-white border-slate-200 text-slate-600'}`}>
-              <input type='checkbox' id='offer' className='w-4 h-4 accent-emerald-600' onChange={handleChange} checked={formData.offer} />
-              Special Offer
-            </label>
-          </div>
-
-          <div className='grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100'>
-            <div className='flex flex-col gap-1'>
-              <label className='text-xs font-semibold text-slate-600 uppercase tracking-wider'>Beds</label>
-              <input type='number' id='bedrooms' min='1' max='10' required className='p-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:outline-none bg-white text-sm' onChange={handleChange} value={formData.bedrooms} />
-            </div>
-            <div className='flex flex-col gap-1'>
-              <label className='text-xs font-semibold text-slate-600 uppercase tracking-wider'>Baths</label>
-              <input type='number' id='bathrooms' min='1' max='10' required className='p-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:outline-none bg-white text-sm' onChange={handleChange} value={formData.bathrooms} />
-            </div>
-            <div className='flex flex-col gap-1 col-span-2 sm:col-span-1'>
-              <label className='text-xs font-semibold text-slate-600 uppercase tracking-wider'>Regular Price <span className='text-[10px] text-slate-400'>{formData.type === 'rent' && '($ / mo)'}</span></label>
-              <input type='number' id='regularPrice' min='50' max='10000000' required className='p-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:outline-none bg-white text-sm font-semibold text-blue-600' onChange={handleChange} value={formData.regularPrice} />
-            </div>
-            {formData.offer && (
-              <div className='flex flex-col gap-1 col-span-2 sm:col-span-1 animate-fade-in'>
-                <label className='text-xs font-semibold text-emerald-700 uppercase tracking-wider'>Discounted Price <span className='text-[10px] text-emerald-500'>{formData.type === 'rent' && '($ / mo)'}</span></label>
-                <input type='number' id='discountPrice' min='0' max='10000000' required className='p-2.5 border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:outline-none bg-white text-sm font-semibold text-emerald-600' onChange={handleChange} value={formData.discountPrice} />
-              </div>
-            )}
-          </div>
+        {/* Main Header */}
+        <div>
+          <h1 className='text-3xl font-extrabold text-slate-900 tracking-tight'>Update Your Listing</h1>
+          <p className='text-sm text-slate-400 mt-1'>Modify the details below to update your property in the marketplace.</p>
         </div>
+        
+        <form onSubmit={handleSubmit} className='grid grid-cols-1 lg:grid-cols-12 gap-8 items-start'>
+          
+          {/* Left Column: Property Details & Options */}
+          <div className='lg:col-span-7 bg-white p-6 md:p-8 rounded-3xl shadow-xl shadow-slate-200/40 border border-slate-100 flex flex-col gap-5'>
+            
+            <h2 className='text-lg font-bold text-slate-800 border-b border-slate-100 pb-3 flex items-center gap-2'>
+              <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
+              Property Information
+            </h2>
 
-        {/* القسم الأيمن: رفع وإدارة الصور */}
-        <div className='flex flex-col flex-1 gap-5 border-t md:border-t-0 md:border-l border-slate-100 pt-6 md:pt-0 md:pl-6'>
-          <div>
-            <p className='font-bold text-slate-800 text-sm mb-1'>Property Images</p>
-            <p className='text-xs text-slate-500'>The first image will be the main cover (maximum 6 images).</p>
-          </div>
-          
-          <div className='flex gap-3'>
-            <input
-              onChange={(e) => setFiles(e.target.files)}
-              className='p-2.5 border border-slate-200 rounded-xl w-full text-sm text-slate-600 file:mr-4 file:py-1.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer bg-slate-50'
-              type='file'
-              id='images'
-              accept='image/*'
-              multiple
-            />
-            <button
-              type='button'
-              disabled={uploading}
-              onClick={handleImageSubmit}
-              className='px-5 py-2.5 text-blue-600 border border-blue-200 bg-blue-50/50 rounded-xl font-semibold uppercase text-xs tracking-wider hover:bg-blue-600 hover:text-white disabled:opacity-50 transition-all shadow-sm'
-            >
-              {uploading ? 'Uploading...' : 'Upload'}
-            </button>
-          </div>
-          
-          {imageUploadError && <p className='text-red-600 text-xs font-medium bg-red-50 p-2.5 rounded-lg border border-red-100'>{imageUploadError}</p>}
-          
-          <div className='grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[320px] overflow-y-auto pr-1'>
-            {formData.imageUrls.length > 0 &&
-              formData.imageUrls.map((url, index) => (
-                <div
-                  key={url}
-                  className='flex justify-between p-2.5 border border-slate-100 rounded-xl items-center bg-slate-50/50 hover:bg-slate-50 transition-colors'
+            <div className='flex flex-col gap-1.5'>
+              <label className='text-xs font-bold text-slate-700 tracking-wide ml-1'>Property Title</label>
+              <input
+                type='text'
+                placeholder='e.g., Luxury Apartment with Sea View'
+                className='border border-slate-200 rounded-xl p-3.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all bg-slate-50/20'
+                id='name'
+                maxLength='62'
+                minLength='10'
+                required
+                onChange={handleChange}
+                value={formData.name}
+              />
+            </div>
+
+            <div className='flex flex-col gap-1.5'>
+              <div className='flex justify-between items-center flex-wrap gap-2'>
+                <label className='text-xs font-bold text-slate-700 tracking-wide ml-1'>Description</label>
+                <button
+                  type='button'
+                  disabled={aiLoading}
+                  onClick={handleGenerateAI}
+                  className='bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-3 py-1.5 rounded-xl text-xs font-semibold uppercase hover:opacity-95 disabled:opacity-80 flex items-center gap-2 shadow-sm transition'
                 >
-                  <div className='flex items-center gap-3'>
-                    <img src={url} alt='listing thumbnail' className='w-14 h-14 object-cover rounded-lg shadow-sm border border-white' />
-                    <span className='text-xs font-medium text-slate-500'>{index === 0 ? '🏆 Cover' : `Image ${index + 1}`}</span>
+                  {aiLoading ? 'جاري التوليد... ✨' : 'توليد وصف ذكي بالذكاء الاصطناعي ✨'}
+                </button>
+              </div>
+              <textarea
+                placeholder='Describe the property features, neighborhood, utilities...'
+                className='border border-slate-200 rounded-xl p-3.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all bg-slate-50/20 min-h-[120px]'
+                id='description'
+                required
+                onChange={handleChange}
+                value={formData.description}
+              />
+              {/* قالب الخطأ المنسق والتفاعلي للـ AI Description */}
+              {aiError && (
+                <div className='bg-amber-50 text-amber-700 text-xs font-semibold p-3 rounded-xl border border-amber-200/70 mt-1 animate-fadeIn text-right' dir="rtl">
+                  {aiError}
+                </div>
+              )}
+            </div>
+
+            <div className='flex flex-col gap-1.5'>
+              <label className='text-xs font-bold text-slate-700 tracking-wide ml-1'>Address</label>
+              <input
+                type='text'
+                placeholder='Full location address'
+                className='border border-slate-200 rounded-xl p-3.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all bg-slate-50/20'
+                id='address'
+                required
+                onChange={handleChange}
+                value={formData.address}
+              />
+            </div>
+
+            {/* Amenities & Checkboxes */}
+            <div className='bg-slate-50/50 p-4 rounded-2xl border border-slate-100 mt-2'>
+              <p className='text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 ml-1'>Amenities & Options</p>
+              <div className='flex gap-5 flex-wrap'>
+                <label className='flex items-center gap-2.5 bg-white px-4 py-2.5 rounded-xl border border-slate-200 cursor-pointer hover:border-blue-300 transition-colors shadow-sm select-none'>
+                  <input
+                    type='checkbox'
+                    id='sale'
+                    className='w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300'
+                    onChange={handleChange}
+                    checked={formData.type === 'sale'}
+                  />
+                  <span className='text-sm font-medium text-slate-700'>Sell Property</span>
+                </label>
+
+                <label className='flex items-center gap-2.5 bg-white px-4 py-2.5 rounded-xl border border-slate-200 cursor-pointer hover:border-blue-300 transition-colors shadow-sm select-none'>
+                  <input
+                    type='checkbox'
+                    id='rent'
+                    className='w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300'
+                    onChange={handleChange}
+                    checked={formData.type === 'rent'}
+                  />
+                  <span className='text-sm font-medium text-slate-700'>Rent Property</span>
+                </label>
+
+                <label className='flex items-center gap-2.5 bg-white px-4 py-2.5 rounded-xl border border-slate-200 cursor-pointer hover:border-blue-300 transition-colors shadow-sm select-none'>
+                  <input
+                    type='checkbox'
+                    id='parking'
+                    className='w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300'
+                    onChange={handleChange}
+                    checked={formData.parking}
+                  />
+                  <span className='text-sm font-medium text-slate-700'>Parking Spot</span>
+                </label>
+
+                <label className='flex items-center gap-2.5 bg-white px-4 py-2.5 rounded-xl border border-slate-200 cursor-pointer hover:border-blue-300 transition-colors shadow-sm select-none'>
+                  <input
+                    type='checkbox'
+                    id='furnished'
+                    className='w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300'
+                    onChange={handleChange}
+                    checked={formData.furnished}
+                  />
+                  <span className='text-sm font-medium text-slate-700'>Furnished</span>
+                </label>
+
+                <label className='flex items-center gap-2.5 bg-white px-4 py-2.5 rounded-xl border border-slate-200 cursor-pointer hover:border-blue-300 transition-colors shadow-sm select-none'>
+                  <input
+                    type='checkbox'
+                    id='offer'
+                    className='w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300'
+                    onChange={handleChange}
+                    checked={formData.offer}
+                  />
+                  <span className='text-sm font-medium text-slate-700'>Special Offer</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Numeric Fields */}
+            <div className='grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4 mt-2'>
+              <div className='flex flex-col gap-1.5'>
+                <label className='text-xs font-bold text-slate-600 ml-1'>Beds</label>
+                <input
+                  type='number'
+                  id='bedrooms'
+                  min='1'
+                  max='10'
+                  required
+                  className='p-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 bg-slate-50/20 text-center font-semibold text-slate-700'
+                  onChange={handleChange}
+                  value={formData.bedrooms}
+                />
+              </div>
+
+              <div className='flex flex-col gap-1.5'>
+                <label className='text-xs font-bold text-slate-600 ml-1'>Baths</label>
+                <input
+                  type='number'
+                  id='bathrooms'
+                  min='1'
+                  max='10'
+                  required
+                  className='p-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 bg-slate-50/20 text-center font-semibold text-slate-700'
+                  onChange={handleChange}
+                  value={formData.bathrooms}
+                />
+              </div>
+
+              <div className='flex flex-col gap-1.5'>
+                <label className='text-xs font-bold text-slate-600 ml-1'>
+                  Regular Price {formData.type === 'rent' && <span className='text-slate-400 font-normal'>($/mo)</span>}
+                </label>
+                <input
+                  type='number'
+                  id='regularPrice'
+                  min='50'
+                  max='10000000'
+                  required
+                  className='p-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 bg-slate-50/20 text-center font-semibold text-slate-700'
+                  onChange={handleChange}
+                  value={formData.regularPrice}
+                />
+              </div>
+
+              {formData.offer && (
+                <div className='flex flex-col gap-1.5'>
+                  <label className='text-xs font-bold text-rose-600 ml-1'>
+                    Discount Price {formData.type === 'rent' && <span className='text-rose-400 font-normal'>($/mo)</span>}
+                  </label>
+                  <input
+                    type='number'
+                    id='discountPrice'
+                    min='0'
+                    max='10000000'
+                    required
+                    className='p-3 border border-rose-200 rounded-xl text-sm focus:outline-none focus:border-rose-500 bg-rose-50/10 text-center font-bold text-rose-600 ring-1 ring-rose-100'
+                    onChange={handleChange}
+                    value={formData.discountPrice}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* AI Valuation Interactive Section Component */}
+            <div className='bg-slate-50 p-5 rounded-2xl border border-slate-200 shadow-sm mt-3' dir="rtl">
+              <div className='flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-2'>
+                <div className='flex items-center gap-2'>
+                  <span className='text-xl'>💡</span>
+                  <h3 className='text-sm font-bold text-slate-800'>هل تحتار في تحديد السعر العادل لعقارك؟</h3>
+                </div>
+                <button
+                  type='button'
+                  onClick={handleAIValuation}
+                  disabled={valLoading}
+                  className='bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold rounded-xl text-xs px-4 py-2.5 hover:opacity-95 shadow-sm transition-all disabled:opacity-50'
+                >
+                  {valLoading ? 'جاري التحليل المالي...' : '✨ اقترح عليّ سعراً عادلاً (AI Valuation)'}
+                </button>
+              </div>
+
+              {/* قالب الخطأ المنظم الخاص بالـ Valuation */}
+              {valError && (
+                <div className='bg-amber-50 text-amber-700 text-xs font-semibold p-3 rounded-xl border border-amber-200/70 mt-3 text-right'>
+                  {valError}
+                </div>
+              )}
+
+              {valuation && (
+                <div className='flex flex-col gap-3 text-right bg-white p-4 rounded-xl border border-slate-100 mt-4 animate-fadeIn'>
+                  <div>
+                    <p className='text-xs text-slate-400 mb-1'>القيمة السوقية المقترحة من الـ AI لهذا العقار:</p>
+                    <p className='text-lg font-bold text-emerald-600 font-mono' dir="ltr">
+                      ${valuation.estimatedMinPrice?.toLocaleString()} - ${valuation.estimatedMaxPrice?.toLocaleString()}
+                    </p>
+                    <div className='flex items-center gap-2 mt-1'>
+                      <p className='text-xs text-slate-400'>حالة التسعير المبدئي للـ Cover:</p>
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${valuation.priceStatus === 'Good Deal' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : valuation.priceStatus === 'Fair Price' ? 'bg-blue-50 text-blue-600 border border-blue-100' : 'bg-amber-50 text-amber-600 border border-amber-100'}`}>
+                        {valuation.priceStatus}
+                      </span>
+                    </div>
+                    <p className='text-[10px] text-slate-400 mt-1 leading-relaxed'>
+                      * يعتمد هذا النطاق الاسترشادي على تحليل مواصفات العقار المدخلة وعنوان المنطقة الجغرافية.
+                    </p>
                   </div>
+                  
+                  <div className='border-t border-slate-100 pt-3 grid grid-cols-1 md:grid-cols-2 gap-3'>
+                    <div className='bg-slate-50/70 p-3 rounded-xl border border-slate-100'>
+                      <h4 className='font-bold text-slate-700 text-xs mb-1'>📈 اتجاهات السوق في المنطقة:</h4>
+                      <p className='text-slate-600 text-xs leading-relaxed'>{valuation.marketTrend}</p>
+                    </div>
+                    <div className='bg-slate-50/70 p-3 rounded-xl border border-slate-100'>
+                      <h4 className='font-bold text-slate-700 text-xs mb-1'>🎯 نصيحة استراتيجية للتسعير:</h4>
+                      <p className='text-slate-600 text-xs leading-relaxed'>{valuation.investmentAdvice}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+          </div>
+
+          {/* Right Column: Media Upload */}
+          <div className='lg:col-span-5 flex flex-col gap-6'>
+            <div className='bg-white p-6 md:p-8 rounded-3xl shadow-xl shadow-slate-200/40 border border-slate-100 flex flex-col gap-5'>
+              <h2 className='text-lg font-bold text-slate-800 border-b border-slate-100 pb-3 flex items-center gap-2'>
+                <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                Media Gallery
+              </h2>
+              
+              <div>
+                <p className='text-xs font-bold text-slate-700 tracking-wide mb-1'>Upload Images</p>
+                <p className='text-xs text-slate-400 mb-3'>The first image will be set as the main cover (Max 6 images).</p>
+                
+                <div className='flex gap-3'>
+                  <input
+                    onChange={(e) => setFiles(e.target.files)}
+                    className='p-2.5 border border-slate-200 rounded-xl w-full text-xs text-slate-500 bg-slate-50/50 file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition-all cursor-pointer'
+                    type='file'
+                    id='images'
+                    accept='image/*'
+                    multiple
+                  />
                   <button
                     type='button'
-                    onClick={() => triggerDeleteModal(index)} // هنا تم التعديل لاستدعاء الـ Modal
-                    className='text-xs font-bold text-red-500 hover:text-red-700 uppercase bg-white px-2.5 py-1.5 rounded-md shadow-xs border border-slate-100 hover:bg-red-50 transition-colors'
+                    disabled={uploading}
+                    onClick={handleImageSubmit}
+                    className='px-4 text-xs font-bold text-emerald-600 border border-emerald-200 rounded-xl uppercase hover:bg-emerald-50 disabled:opacity-70 transition-all shrink-0'
                   >
-                    Delete
+                    {uploading ? 'Uploading...' : 'Upload'}
                   </button>
                 </div>
-              ))}
+                {imageUploadError && <p className='text-red-500 text-xs font-medium mt-2 bg-red-50 p-2 rounded-lg text-center'>{imageUploadError}</p>}
+              </div>
+
+              {/* Uploaded Images Preview Grid */}
+              {formData.imageUrls.length > 0 && (
+                <div className='grid grid-cols-1 gap-2.5 bg-slate-50/50 p-3 rounded-2xl border border-slate-100 max-h-[320px] overflow-y-auto'>
+                  {formData.imageUrls.map((url, index) => (
+                    <div
+                      key={url}
+                      className='flex justify-between p-2.5 bg-white border border-slate-100 items-center rounded-xl shadow-sm'
+                    >
+                      <div className='flex items-center gap-3 truncate'>
+                        <img
+                          src={url}
+                          alt='listing'
+                          className='w-14 h-14 object-cover rounded-lg border border-slate-100'
+                        />
+                        <span className='text-xs font-medium text-slate-500'>
+                          {index === 0 ? '🏆 Cover' : `Image ${index + 1}`}
+                        </span>
+                      </div>
+                      <button
+                        type='button'
+                        onClick={() => triggerDeleteModal(index)}
+                        className='text-xs font-bold text-rose-600 hover:bg-rose-50 px-3 py-1.5 rounded-lg transition-all uppercase'
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className='flex flex-col gap-3 mt-2'>
+                <button
+                  disabled={loading || uploading}
+                  className='w-full bg-blue-600 text-white rounded-xl p-3.5 font-semibold uppercase hover:bg-blue-700 active:scale-[0.99] transition-all text-sm shadow-md shadow-blue-600/10 disabled:opacity-70'
+                >
+                  {loading ? 'Updating Property...' : 'Update Listing'}
+                </button>
+                {error && <p className='text-red-500 text-xs font-medium text-center mt-1 bg-red-50 p-2 rounded-lg border border-red-100'>{error}</p>}
+              </div>
+            </div>
           </div>
 
-          <button
-            disabled={loading || uploading}
-            className='w-full py-3.5 bg-blue-600 text-white font-bold rounded-xl uppercase tracking-wider text-sm hover:bg-blue-700 shadow-md hover:shadow-lg disabled:opacity-75 transition-all mt-auto'
-          >
-            {loading ? 'Updating Property...' : 'Update Listing'}
-          </button>
-          
-          {error && <p className='text-red-600 text-xs font-medium bg-red-50 p-3 rounded-lg border border-red-100 text-center'>{error}</p>}
-        </div>
-      </form>
+        </form>
+      </main>
 
-      {/* 🌟 نافذة التأكيد الاحترافية والمودرن (Custom Modal Popup) 🌟 */}
+      {/* Confirmation Modal Container */}
       {showModal && (
         <div className='fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-fade-in'>
           <div className='bg-white rounded-2xl max-w-md w-full shadow-xl border border-slate-100 overflow-hidden transform scale-100 transition-all duration-300'>
-            
-            {/* الهيدر */}
             <div className='bg-slate-50 p-4 border-b border-slate-100 text-center'>
               <h3 className='text-md font-bold text-slate-800 uppercase tracking-wider'>
                 Confirmation Required
               </h3>
             </div>
-            
-            {/* المحتوى */}
             <div className='p-6 text-center flex flex-col gap-2'>
               <p className='text-slate-700 font-semibold text-base'>
                 Do you want to permanently delete this image?
@@ -340,8 +608,6 @@ export default function UpdateListing() {
                 This action cannot be undone.
               </p>
             </div>
-            
-            {/* أزرار التحكم السفلى المنسقة مثل الصورة تماماً */}
             <div className='flex gap-3 p-4 bg-slate-50 border-t border-slate-100 justify-center'>
               <button
                 type='button'
@@ -358,10 +624,9 @@ export default function UpdateListing() {
                 🗑️ Confirm Delete
               </button>
             </div>
-
           </div>
         </div>
       )}
-    </main>
+    </div>
   );
 }
