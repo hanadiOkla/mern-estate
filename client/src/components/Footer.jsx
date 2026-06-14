@@ -1,5 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next"; // 1. استيراد خطاف الترجمة
 import {
   FaFacebookF,
   FaInstagram,
@@ -11,10 +12,13 @@ import {
 import { MdLocationOn } from "react-icons/md";
 
 function Footer() {
+  const { t, i18n } = useTranslation(); // 2. تفعيل الترجام وإدارة اللغات
+
   return (
     <footer className="bg-slate-900 text-slate-300 border-t border-slate-800">
       {/* القسم الرئيسي: شبكة الروابط والـ Newsletter */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10">
+        
         {/* العمود 1: عن الشركة واللوجو */}
         <div className="lg:col-span-2 flex flex-col gap-4">
           <Link
@@ -24,9 +28,10 @@ function Footer() {
             Sahand<span className="text-blue-500">Estate</span>
           </Link>
           <p className="text-sm text-slate-400 leading-relaxed max-w-sm">
-            The leading marketplace to find your next perfect place to live. We
-            make buying, renting, and selling real estate simple, transparent,
-            and seamless.
+            {t(
+              "footer.aboutDesc",
+              "The leading marketplace to find your next perfect place to live. We make buying, renting, and selling real estate simple, transparent, and seamless."
+            )}
           </p>
           {/* أيقونات التواصل الاجتماعي */}
           <div className="flex gap-3 mt-2">
@@ -59,13 +64,13 @@ function Footer() {
 
         {/* العمود 2: روابط سريعة */}
         <div className="flex flex-col gap-4">
-          <h4 className="text-sm font-bold text-white uppercase tracking-wider">
-            Quick Links
+          <h4 className={`text-sm font-bold text-white ${i18n.language === "en" ? "uppercase tracking-wider" : ""}`}>
+            {t("footer.quickLinks", "Quick Links")}
           </h4>
           <ul className="flex flex-col gap-2.5 text-sm font-medium">
             <li>
               <Link to="/" className="hover:text-blue-400 transition-colors">
-                Home
+                {t("footer.home", "Home")}
               </Link>
             </li>
             <li>
@@ -73,7 +78,7 @@ function Footer() {
                 to="/about"
                 className="hover:text-blue-400 transition-colors"
               >
-                About Us
+                {t("footer.aboutUs", "About Us")}
               </Link>
             </li>
             <li>
@@ -81,7 +86,7 @@ function Footer() {
                 to="/search"
                 className="hover:text-blue-400 transition-colors"
               >
-                Find Properties
+                {t("footer.findProperties", "Find Properties")}
               </Link>
             </li>
             <li>
@@ -89,7 +94,7 @@ function Footer() {
                 to="/search?offer=true"
                 className="hover:text-blue-400 transition-colors"
               >
-                Latest Offers
+                {t("footer.latestOffers", "Latest Offers")}
               </Link>
             </li>
           </ul>
@@ -97,8 +102,8 @@ function Footer() {
 
         {/* العمود 3: معلومات التواصل */}
         <div className="flex flex-col gap-4">
-          <h4 className="text-sm font-bold text-white uppercase tracking-wider">
-            Contact Us
+          <h4 className={`text-sm font-bold text-white ${i18n.language === "en" ? "uppercase tracking-wider" : ""}`}>
+            {t("footer.contactUs", "Contact Us")}
           </h4>
           <ul className="flex flex-col gap-3 text-sm text-slate-400 font-medium">
             <li className="flex items-start gap-2.5">
@@ -106,11 +111,11 @@ function Footer() {
                 className="text-blue-500 mt-0.5 flex-shrink-0"
                 size={18}
               />
-              <span>123 Real Estate Ave, Riyadh, Saudi Arabia</span>
+              <span dir="ltr">{t("footer.addressValue", "123 Real Estate Ave, Riyadh, Saudi Arabia")}</span>
             </li>
             <li className="flex items-center gap-2.5">
               <FaPhoneAlt className="text-blue-500 flex-shrink-0" size={14} />
-              <span>+1 (234) 567-890</span>
+              <span dir="ltr">+1 (234) 567-890</span>
             </li>
             <li className="flex items-center gap-2.5">
               <FaEnvelope className="text-blue-500 flex-shrink-0" size={14} />
@@ -121,11 +126,11 @@ function Footer() {
 
         {/* العمود 4: صندوق الاشتراك المطور */}
         <div className="flex flex-col gap-4">
-          <h4 className="text-sm font-bold text-white uppercase tracking-wider">
-            Newsletter
+          <h4 className={`text-sm font-bold text-white ${i18n.language === "en" ? "uppercase tracking-wider" : ""}`}>
+            {t("footer.newsletter", "Newsletter")}
           </h4>
           <p className="text-xs text-slate-400 leading-relaxed">
-            Subscribe to receive our latest property updates and market trends.
+            {t("footer.newsletterDesc", "Subscribe to receive our latest property updates and market trends.")}
           </p>
           <form
             className="flex flex-col gap-2 mt-1"
@@ -133,11 +138,11 @@ function Footer() {
           >
             <input
               type="email"
-              placeholder="Your email address"
+              placeholder={t("footer.emailPlaceholder", "Your email address")}
               className="bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
             />
             <button className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-all shadow-md shadow-blue-600/10">
-              Subscribe Now
+              {t("footer.subscribeBtn", "Subscribe Now")}
             </button>
           </form>
         </div>
@@ -147,14 +152,17 @@ function Footer() {
       <div className="border-t border-slate-800 bg-slate-950/40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-slate-500 font-medium">
           <p>
-            © {new Date().getFullYear()} Sahand Estate. All rights reserved.
+            {t("footer.copyrights", {
+              year: new Date().getFullYear(),
+              defaultValue: `© ${new Date().getFullYear()} Sahand Estate. All rights reserved.`,
+            })}
           </p>
           <div className="flex gap-6">
             <a href="#" className="hover:text-slate-400 transition-colors">
-              Privacy Policy
+              {t("footer.privacyPolicy", "Privacy Policy")}
             </a>
             <a href="#" className="hover:text-slate-400 transition-colors">
-              Terms of Service
+              {t("footer.termsOfService", "Terms of Service")}
             </a>
           </div>
         </div>

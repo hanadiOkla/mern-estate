@@ -245,6 +245,23 @@
   },
   "oauth": {
     "googleBtn": "Continue with Google"
+  },
+  "footer": {
+    "aboutDesc": "The leading marketplace to find your next perfect place to live. We make buying, renting, and selling real estate simple, transparent, and seamless.",
+    "quickLinks": "Quick Links",
+    "home": "Home",
+    "aboutUs": "About Us",
+    "findProperties": "Find Properties",
+    "latestOffers": "Latest Offers",
+    "contactUs": "Contact Us",
+    "addressValue": "123 Real Estate Ave, Riyadh, Saudi Arabia",
+    "newsletter": "Newsletter",
+    "newsletterDesc": "Subscribe to receive our latest property updates and market trends.",
+    "emailPlaceholder": "Your email address",
+    "subscribeBtn": "Subscribe Now",
+    "copyrights": "© {{year}} Sahand Estate. All rights reserved.",
+    "privacyPolicy": "Privacy Policy",
+    "termsOfService": "Terms of Service"
   }
 
 }
