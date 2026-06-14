@@ -8,10 +8,13 @@ import {
 import { app } from '../firebase';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next'; // 1. استيراد خطاف الترجمة
 
 export default function CreateListing() {
   const { currentUser } = useSelector((state) => state.user);
   const navigate = useNavigate();
+  const { t } = useTranslation(); // 2. تفعيل الترجـمة
+  
   const [files, setFiles] = useState([]);
   const [formData, setFormData] = useState({
     imageUrls: [],
@@ -79,8 +82,7 @@ export default function CreateListing() {
       uploadTask.on(
         'state_changed',
         (snapshot) => {
-          const progress =
-            (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
           console.log(`Upload is ${progress}% done`);
         },
         (error) => {
@@ -137,9 +139,9 @@ export default function CreateListing() {
     e.preventDefault();
     try {
       if (formData.imageUrls.length < 1)
-        return setError('You must upload at least one image');
+        return setError(t('err_min_image'));
       if (formData.offer && +formData.regularPrice < +formData.discountPrice)
-        return setError('Discount price must be lower than regular price');
+        return setError(t('err_price_validation'));
       setLoading(true);
       setError(false);
       const res = await fetch('/api/listing/create', {
@@ -167,16 +169,14 @@ export default function CreateListing() {
   // Handles AI smart description generation
   const handleGenerateAI = async () => {
     try {
-      // Professional Inline Validation instead of alert()
       if (!formData.name || !formData.address || !formData.type) {
-        setAiError('⚠️ Please fill out Name, Address, and Type first to generate a smart description.');
+        setAiError(t('ai_error_fields'));
         return;
       }
 
       setAiLoading(true);
       setAiError(null);
 
-      // credentials: 'include' added to fix 401 Unauthorized errors
       const res = await fetch('/api/listing/generate-ai', {
         method: 'POST',
         headers: {
@@ -210,9 +210,8 @@ export default function CreateListing() {
   const handleAIValuation = async (e) => {
     e.preventDefault();
     
-    // Professional Inline Validation instead of alert()
     if (!formData.address || !formData.type) {
-      setValError('⚠️ Address and Property Type are required for the AI to analyze valuation.');
+      setValError(t('ai_val_error_fields'));
       return;
     }
 
@@ -221,7 +220,6 @@ export default function CreateListing() {
       setValError(null);
       setValuation(null);
 
-      // credentials: 'include' added to fix 401 Unauthorized errors
       const res = await fetch('/api/listing/evaluate-ai', {
         method: 'POST',
         headers: {
@@ -242,7 +240,7 @@ export default function CreateListing() {
       setValuation(data.valuation);
       setValLoading(false);
     } catch (err) {
-      setValError('Connection error occurred while fetching AI Valuation.');
+      setValError(t('ai_val_connection_error'));
       setValLoading(false);
     }
   };
@@ -253,8 +251,8 @@ export default function CreateListing() {
         
         {/* Main Header */}
         <div>
-          <h1 className='text-3xl font-extrabold text-slate-900 tracking-tight'>Create a Listing</h1>
-          <p className='text-sm text-slate-400 mt-1'>Fill out the details below to publish your property to the marketplace.</p>
+          <h1 className='text-3xl font-extrabold text-slate-900 tracking-tight'>{t('create_title')}</h1>
+          <p className='text-sm text-slate-400 mt-1'>{t('create_subtitle')}</p>
         </div>
 
         <form onSubmit={handleSubmit} className='grid grid-cols-1 lg:grid-cols-12 gap-8 items-start'>
@@ -266,14 +264,14 @@ export default function CreateListing() {
               <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2-2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
               </svg>
-              Property Information
-            </h2>
+              {t('property_info')}
+            </h2> 
 
             <div className='flex flex-col gap-1.5'>
-              <label className='text-xs font-bold text-slate-700 tracking-wide ml-1'>Property Title</label>
+              <label className='text-xs font-bold text-slate-700 tracking-wide ltr:ml-1 rtl:mr-1'>{t('property_title_label')}</label>
               <input
                 type='text'
-                placeholder='e.g., Luxury Apartment with Sea View'
+                placeholder={t('property_title_placeholder')}
                 className='border border-slate-200 rounded-xl p-3.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all bg-slate-50/20'
                 id='name'
                 maxLength='62'
@@ -286,25 +284,24 @@ export default function CreateListing() {
 
             <div className='flex flex-col gap-1.5'>
               <div className='flex justify-between items-center flex-wrap gap-2'>
-                <label className='text-xs font-bold text-slate-700 tracking-wide ml-1'>Description</label>
+                <label className='text-xs font-bold text-slate-700 tracking-wide ltr:ml-1 rtl:mr-1'>{t('description_label')}</label>
                 <button
                   type='button'
                   disabled={aiLoading}
                   onClick={handleGenerateAI}
                   className='bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-3 py-1.5 rounded-xl text-xs font-semibold uppercase hover:opacity-95 disabled:opacity-80 flex items-center gap-2 shadow-sm transition'
                 >
-                  {aiLoading ? 'Generating... ✨' : 'Generate AI Description ✨'}
+                  {aiLoading ? t('btn_generating_ai') : t('btn_generate_ai')}
                 </button>
               </div>
               <textarea
-                placeholder='Describe the property features, neighborhood, utilities...'
+                placeholder={t('description_placeholder')}
                 className='border border-slate-200 rounded-xl p-3.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all bg-slate-50/20 min-h-[120px]'
                 id='description'
                 required
                 onChange={handleChange}
                 value={formData.description}
               />
-              {/* Modern AI Error Message for Description */}
               {aiError && (
                 <div className='bg-amber-50 text-amber-700 text-xs font-semibold p-3 rounded-xl border border-amber-200/70 mt-1 animate-fadeIn'>
                   {aiError}
@@ -313,10 +310,10 @@ export default function CreateListing() {
             </div>
 
             <div className='flex flex-col gap-1.5'>
-              <label className='text-xs font-bold text-slate-700 tracking-wide ml-1'>Address</label>
+              <label className='text-xs font-bold text-slate-700 tracking-wide ltr:ml-1 rtl:mr-1'>{t('address_label')}</label>
               <input
                 type='text'
-                placeholder='Full location address'
+                placeholder={t('address_placeholder')}
                 className='border border-slate-200 rounded-xl p-3.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all bg-slate-50/20'
                 id='address'
                 required
@@ -327,7 +324,7 @@ export default function CreateListing() {
 
             {/* Amenities & Checkboxes */}
             <div className='bg-slate-50/50 p-4 rounded-2xl border border-slate-100 mt-2'>
-              <p className='text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 ml-1'>Amenities & Options</p>
+              <p className='text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 ltr:ml-1 rtl:mr-1'>{t('amenities_options')}</p>
               <div className='flex gap-5 flex-wrap'>
                 <label className='flex items-center gap-2.5 bg-white px-4 py-2.5 rounded-xl border border-slate-200 cursor-pointer hover:border-blue-300 transition-colors shadow-sm select-none'>
                   <input
@@ -337,7 +334,7 @@ export default function CreateListing() {
                     onChange={handleChange}
                     checked={formData.type === 'sale'}
                   />
-                  <span className='text-sm font-medium text-slate-700'>Sell Property</span>
+                  <span className='text-sm font-medium text-slate-700'>{t('opt_sell')}</span>
                 </label>
 
                 <label className='flex items-center gap-2.5 bg-white px-4 py-2.5 rounded-xl border border-slate-200 cursor-pointer hover:border-blue-300 transition-colors shadow-sm select-none'>
@@ -348,7 +345,7 @@ export default function CreateListing() {
                     onChange={handleChange}
                     checked={formData.type === 'rent'}
                   />
-                  <span className='text-sm font-medium text-slate-700'>Rent Property</span>
+                  <span className='text-sm font-medium text-slate-700'>{t('opt_rent')}</span>
                 </label>
 
                 <label className='flex items-center gap-2.5 bg-white px-4 py-2.5 rounded-xl border border-slate-200 cursor-pointer hover:border-blue-300 transition-colors shadow-sm select-none'>
@@ -359,7 +356,7 @@ export default function CreateListing() {
                     onChange={handleChange}
                     checked={formData.parking}
                   />
-                  <span className='text-sm font-medium text-slate-700'>Parking Spot</span>
+                  <span className='text-sm font-medium text-slate-700'>{t('opt_parking')}</span>
                 </label>
 
                 <label className='flex items-center gap-2.5 bg-white px-4 py-2.5 rounded-xl border border-slate-200 cursor-pointer hover:border-blue-300 transition-colors shadow-sm select-none'>
@@ -370,7 +367,7 @@ export default function CreateListing() {
                     onChange={handleChange}
                     checked={formData.furnished}
                   />
-                  <span className='text-sm font-medium text-slate-700'>Furnished</span>
+                  <span className='text-sm font-medium text-slate-700'>{t('opt_furnished')}</span>
                 </label>
 
                 <label className='flex items-center gap-2.5 bg-white px-4 py-2.5 rounded-xl border border-slate-200 cursor-pointer hover:border-blue-300 transition-colors shadow-sm select-none'>
@@ -381,7 +378,7 @@ export default function CreateListing() {
                     onChange={handleChange}
                     checked={formData.offer}
                   />
-                  <span className='text-sm font-medium text-slate-700'>Special Offer</span>
+                  <span className='text-sm font-medium text-slate-700'>{t('opt_offer')}</span>
                 </label>
               </div>
             </div>
@@ -389,7 +386,7 @@ export default function CreateListing() {
             {/* Numeric Fields */}
             <div className='grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4 mt-2'>
               <div className='flex flex-col gap-1.5'>
-                <label className='text-xs font-bold text-slate-600 ml-1'>Beds</label>
+                <label className='text-xs font-bold text-slate-600 ltr:ml-1 rtl:mr-1'>{t('lbl_beds')}</label>
                 <input
                   type='number'
                   id='bedrooms'
@@ -403,7 +400,7 @@ export default function CreateListing() {
               </div>
 
               <div className='flex flex-col gap-1.5'>
-                <label className='text-xs font-bold text-slate-600 ml-1'>Baths</label>
+                <label className='text-xs font-bold text-slate-600 ltr:ml-1 rtl:mr-1'>{t('lbl_baths')}</label>
                 <input
                   type='number'
                   id='bathrooms'
@@ -417,8 +414,8 @@ export default function CreateListing() {
               </div>
 
               <div className='flex flex-col gap-1.5'>
-                <label className='text-xs font-bold text-slate-600 ml-1'>
-                  Regular Price {formData.type === 'rent' && <span className='text-slate-400 font-normal'>($/mo)</span>}
+                <label className='text-xs font-bold text-slate-600 ltr:ml-1 rtl:mr-1'>
+                  {t('lbl_regular_price')} {formData.type === 'rent' && <span className='text-slate-400 font-normal'>({t('mo')})</span>}
                 </label>
                 <input
                   type='number'
@@ -434,8 +431,8 @@ export default function CreateListing() {
 
               {formData.offer && (
                 <div className='flex flex-col gap-1.5'>
-                  <label className='text-xs font-bold text-rose-600 ml-1'>
-                    Discount Price {formData.type === 'rent' && <span className='text-rose-400 font-normal'>($/mo)</span>}
+                  <label className='text-xs font-bold text-rose-600 ltr:ml-1 rtl:mr-1'>
+                    {t('lbl_discount_price')} {formData.type === 'rent' && <span className='text-rose-400 font-normal'>({t('mo')})</span>}
                   </label>
                   <input
                     type='number'
@@ -451,12 +448,12 @@ export default function CreateListing() {
               )}
             </div>
 
-            {/* AI Valuation Section (Arabic UI Content) */}
-            <div className='bg-slate-50 p-5 rounded-2xl border border-slate-200 shadow-sm mt-3' dir="rtl">
+            {/* AI Valuation Section (تم تعديل التنسيق ليكون مرناً مع الاتجاهين تلقائياً) */}
+            <div className='bg-slate-50 p-5 rounded-2xl border border-slate-200 shadow-sm mt-3'>
               <div className='flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-2'>
                 <div className='flex items-center gap-2'>
                   <span className='text-xl'>💡</span>
-                  <h3 className='text-sm font-bold text-slate-800'>هل تحتار في تحديد السعر العادل لعقارك؟</h3>
+                  <h3 className='text-sm font-bold text-slate-800'>{t('ai_val_box_title')}</h3>
                 </div>
                 <button
                   type='button'
@@ -464,36 +461,35 @@ export default function CreateListing() {
                   disabled={valLoading}
                   className='bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold rounded-xl text-xs px-4 py-2.5 hover:opacity-95 shadow-sm transition-all disabled:opacity-50'
                 >
-                  {valLoading ? 'جاري التحليل المالي...' : '✨ اقترح عليّ سعراً عادلاً (AI Valuation)'}
+                  {valLoading ? t('btn_ai_evaluating') : t('btn_ai_evaluate')}
                 </button>
               </div>
 
-              {/* Inline Error for AI Valuation */}
               {valError && (
-                <div className='bg-amber-50 text-amber-700 text-xs font-semibold p-3 rounded-xl border border-amber-200/70 mt-3 text-right'>
+                <div className='bg-amber-50 text-amber-700 text-xs font-semibold p-3 rounded-xl border border-amber-200/70 mt-3'>
                   {valError}
                 </div>
               )}
 
               {valuation && (
-                <div className='flex flex-col gap-3 text-right bg-white p-4 rounded-xl border border-slate-100 mt-4 animate-fadeIn'>
+                <div className='flex flex-col gap-3 bg-white p-4 rounded-xl border border-slate-100 mt-4 animate-fadeIn'>
                   <div>
-                    <p className='text-xs text-slate-400 mb-1'>القيمة السوقية المقترحة من الـ AI لهذا العقار:</p>
+                    <p className='text-xs text-slate-400 mb-1'>{t('ai_val_result_lbl')}</p>
                     <p className='text-lg font-bold text-emerald-600 font-mono' dir="ltr">
                       ${valuation.estimatedMinPrice?.toLocaleString()} - ${valuation.estimatedMaxPrice?.toLocaleString()}
                     </p>
                     <p className='text-[10px] text-slate-400 mt-1 leading-relaxed'>
-                      * يعتمد هذا النطاق الاسترشادي على تحليل مواصفات العقار المدخلة وعنوان المنطقة الجغرافية.
+                      {t('ai_val_disclaimer')}
                     </p>
                   </div>
                   
                   <div className='border-t border-slate-100 pt-3 grid grid-cols-1 md:grid-cols-2 gap-3'>
                     <div className='bg-slate-50/70 p-3 rounded-xl border border-slate-100'>
-                      <h4 className='font-bold text-slate-700 text-xs mb-1'>📈 اتجاهات السوق في المنطقة:</h4>
+                      <h4 className='font-bold text-slate-700 text-xs mb-1'>{t('ai_val_trends')}</h4>
                       <p className='text-slate-600 text-xs leading-relaxed'>{valuation.marketTrend}</p>
                     </div>
                     <div className='bg-slate-50/70 p-3 rounded-xl border border-slate-100'>
-                      <h4 className='font-bold text-slate-700 text-xs mb-1'>🎯 نصيحة استراتيجية للتسعير:</h4>
+                      <h4 className='font-bold text-slate-700 text-xs mb-1'>{t('ai_val_advice')}</h4>
                       <p className='text-slate-600 text-xs leading-relaxed'>{valuation.investmentAdvice}</p>
                     </div>
                   </div>
@@ -511,17 +507,17 @@ export default function CreateListing() {
                 <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
-                Media Gallery
+                {t('media_gallery')}
               </h2>
               
               <div>
-                <p className='text-xs font-bold text-slate-700 tracking-wide mb-1'>Upload Images</p>
-                <p className='text-xs text-slate-400 mb-3'>The first image will be set as the main cover (Max 6 images).</p>
+                <p className='text-xs font-bold text-slate-700 tracking-wide mb-1'>{t('upload_images_lbl')}</p>
+                <p className='text-xs text-slate-400 mb-3'>{t('upload_images_hint')}</p>
                 
                 <div className='flex gap-3'>
                   <input
                     onChange={(e) => setFiles(e.target.files)}
-                    className='p-2.5 border border-slate-200 rounded-xl w-full text-xs text-slate-500 bg-slate-50/50 file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition-all cursor-pointer'
+                    className='p-2.5 border border-slate-200 rounded-xl w-full text-xs text-slate-500 bg-slate-50/50 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition-all cursor-pointer ltr:file:mr-4 rtl:file:ml-4'
                     type='file'
                     id='images'
                     accept='image/*'
@@ -533,7 +529,7 @@ export default function CreateListing() {
                     onClick={handleImageSubmit}
                     className='px-4 text-xs font-bold text-emerald-600 border border-emerald-200 rounded-xl uppercase hover:bg-emerald-50 disabled:opacity-70 transition-all shrink-0'
                   >
-                    {uploading ? 'Uploading...' : 'Upload'}
+                    {uploading ? t('btn_uploading') : t('btn_upload')}
                   </button>
                 </div>
                 {imageUploadError && <p className='text-red-500 text-xs font-medium mt-2 bg-red-50 p-2 rounded-lg text-center'>{imageUploadError}</p>}
@@ -554,7 +550,7 @@ export default function CreateListing() {
                           className='w-14 h-14 object-cover rounded-lg border border-slate-100'
                         />
                         <span className='text-xs font-medium text-slate-500'>
-                          {index === 0 ? '🏆 Cover' : `Image ${index + 1}`}
+                          {index === 0 ? t('lbl_cover') : `${t('lbl_image')} ${index + 1}`}
                         </span>
                       </div>
                       <button
@@ -562,7 +558,7 @@ export default function CreateListing() {
                         onClick={() => handleRemoveImage(index)}
                         className='text-xs font-bold text-rose-600 hover:bg-rose-50 px-3 py-1.5 rounded-lg transition-all uppercase'
                       >
-                        Delete
+                        {t('btn_delete')}
                       </button>
                     </div>
                   ))}
@@ -574,7 +570,7 @@ export default function CreateListing() {
                   disabled={loading || uploading}
                   className='w-full bg-blue-600 text-white rounded-xl p-3.5 font-semibold uppercase hover:bg-blue-700 active:scale-[0.99] transition-all text-sm shadow-md shadow-blue-600/10 disabled:opacity-70'
                 >
-                  {loading ? 'Publishing Property...' : 'Create Listing'}
+                  {loading ? t('btn_publishing_listing') : t('btn_publish_listing')}
                 </button>
                 {error && <p className='text-red-500 text-xs font-medium text-center mt-1 bg-red-50 p-2 rounded-lg border border-red-100'>{error}</p>}
               </div>

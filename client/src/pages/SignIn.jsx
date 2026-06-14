@@ -3,12 +3,18 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { signInStart, signInSuccess, signInFailure } from '../redux/user/userSlice';
 import OAuth from '../components/OAuth';
+// 1. استيراد خطاف الترجمة من react-i18next
+import { useTranslation } from "react-i18next";
 
 function SignIn() {
   const [formData, setFormDate] = useState({});
   const { loading, error } = useSelector((state) => state.user);
   const navigate = useNavigate();
   const dispatch = useDispatch(); 
+
+  // 2. تفعيل دالة الترجمة ومعرفة الاتجاه الحالي
+  const { t, i18n } = useTranslation();
+  const isRtl = i18n.dir() === 'rtl';
 
   const handleChange = (e) => {
     setFormDate({
@@ -50,10 +56,10 @@ function SignIn() {
         {/* العناوين والترحيب */}
         <div className='text-center flex flex-col gap-1.5'>
           <h1 className='text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight'>
-            Welcome Back
+            {t('signin.welcome_title')}
           </h1>
           <p className='text-xs md:text-sm text-slate-400 font-medium'>
-            Enter your credentials to access your account
+            {t('signin.welcome_subtitle')}
           </p>
         </div>
 
@@ -61,12 +67,14 @@ function SignIn() {
         <form onSubmit={handleSubmit} className='flex flex-col gap-4.5'>
           
           {/* حقل البريد الإلكتروني */}
-          <div className='flex flex-col gap-1.5'>
-            <label className='text-xs font-bold text-slate-700 tracking-wide ml-1'>Email Address</label>
+          <div className={`flex flex-col gap-1.5 ${isRtl ? 'text-right' : 'text-left'}`}>
+            <label className={`text-xs font-bold text-slate-700 tracking-wide ${isRtl ? 'mr-1' : 'ml-1'}`}>
+              {t('signin.email_label')}
+            </label>
             <input 
               type="email" 
               placeholder='name@example.com' 
-              className='border border-slate-200 rounded-xl p-3.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-slate-400 bg-slate-50/30' 
+              className={`border border-slate-200 rounded-xl p-3.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-slate-400 bg-slate-50/30 ${isRtl ? 'text-right' : 'text-left'}`} 
               id='email'  
               onChange={handleChange}
               required
@@ -74,19 +82,21 @@ function SignIn() {
           </div>
 
           {/* حقل كلمة المرور */}
-          <div className='flex flex-col gap-1.5 mb-2'>
-            <label className='text-xs font-bold text-slate-700 tracking-wide ml-1'>Password</label>
+          <div className={`flex flex-col gap-1.5 mb-2 ${isRtl ? 'text-right' : 'text-left'}`}>
+            <label className={`text-xs font-bold text-slate-700 tracking-wide ${isRtl ? 'mr-1' : 'ml-1'}`}>
+              {t('signin.password_label')}
+            </label>
             <input 
               type="password" 
               placeholder='••••••••' 
-              className='border border-slate-200 rounded-xl p-3.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-slate-400 bg-slate-50/30' 
+              className={`border border-slate-200 rounded-xl p-3.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-slate-400 bg-slate-50/30 ${isRtl ? 'text-right' : 'text-left'}`} 
               id='password'  
               onChange={handleChange}
               required
             />
           </div>
 
-          {/* زر تسجيل الدخول الأساسي */}
+          {/* زر تسجيل الدخول الأساسي مع حالة التحميل */}
           <button 
             disabled={loading} 
             className='bg-blue-600 text-white p-3.5 rounded-xl font-semibold uppercase hover:bg-blue-700 active:scale-[0.99] transition-all shadow-md shadow-blue-600/10 text-sm disabled:opacity-70 disabled:pointer-events-none mt-2 flex items-center justify-center gap-2'
@@ -97,17 +107,19 @@ function SignIn() {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                 </svg>
-                <span>Authenticating...</span>
+                <span>{t('signin.loading_text')}</span>
               </>
             ) : (
-              'Sign In'
+              t('signin.submit_btn')
             )}
           </button>
 
           {/* الفاصل البصري بين الأزرار */}
           <div className="relative flex py-2 items-center">
             <div className="flex-grow border-t border-slate-100"></div>
-            <span className="flex-shrink mx-4 text-slate-400 text-xs font-semibold uppercase tracking-wider">or</span>
+            <span className="flex-shrink mx-4 text-slate-400 text-xs font-semibold uppercase tracking-wider">
+              {t('signin.or')}
+            </span>
             <div className="flex-grow border-t border-slate-100"></div>
           </div>
 
@@ -116,10 +128,12 @@ function SignIn() {
         </form>
 
         {/* روابط الانتقال وإنشاء الحساب */}
-        <div className='flex items-center justify-center gap-1.5 mt-2 text-sm font-medium border-t border-slate-100/80 pt-5'>
-          <p className='text-slate-500'>Don't have an account?</p>
+        <div className={`flex items-center justify-center gap-1.5 mt-2 text-sm font-medium border-t border-slate-100/80 pt-5 ${isRtl ? 'flex-row-reverse' : ''}`}>
+          <p className='text-slate-500'>{t('signin.no_account')}</p>
           <Link to={"/sign-up"}>
-            <span className='text-blue-600 hover:text-blue-700 hover:underline transition-colors font-semibold'>Sign Up</span>
+            <span className='text-blue-600 hover:text-blue-700 hover:underline transition-colors font-semibold'>
+              {t('signin.signup_link')}
+            </span>
           </Link>
         </div>
 

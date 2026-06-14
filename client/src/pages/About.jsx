@@ -1,7 +1,13 @@
 import React from 'react';
 import { HiOutlineHome, HiOutlineShieldCheck, HiOutlineUserGroup, HiOutlineTrendingUp } from 'react-icons/hi';
+import { useTranslation } from 'react-i18next'; // 1. استيراد المكتبة
 
 export default function About() {
+  const { t, i18n } = useTranslation(); // 2. تهيئة الترجمة
+
+  // تحديد اتجاه الـ divider بناء على اتجاه اللغة الحالي لمنع تداخل الحدود
+  const isRtl = i18n.language === 'ar';
+
   return (
     <div className='bg-slate-50/50 min-h-screen text-slate-700'>
       
@@ -9,13 +15,13 @@ export default function About() {
       <div className='bg-white border-b border-slate-100 py-20 px-4 text-center relative overflow-hidden'>
         <div className='max-w-3xl mx-auto flex flex-col gap-4 relative z-10'>
           <span className='text-xs font-bold uppercase tracking-widest text-blue-600 bg-blue-50 px-3 py-1.5 rounded-full inline-block mx-auto'>
-            Our Journey
+            {t('about_journey')}
           </span>
           <h1 className='text-3xl md:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight'>
-            About <span className='text-blue-600 underline decoration-blue-200 decoration-wavy'>Sahand</span> Estate
+            {t('about_title_1')} <span className='text-blue-600 underline decoration-blue-200 decoration-wavy'>{t('about_title_2')}</span>
           </h1>
           <p className='text-sm md:text-base text-slate-500 max-w-xl mx-auto leading-relaxed mt-2'>
-            We are dedicated to making the process of buying, renting, and selling real estate simple, transparent, and seamless for everyone.
+            {t('about_description')}
           </p>
         </div>
         {/* تأثير خلفية ناعم */}
@@ -24,22 +30,23 @@ export default function About() {
 
       {/* 📊 2. Stats Section (لوحة الأرقام والإحصائيات) */}
       <div className='max-w-6xl mx-auto px-4 -mt-10 relative z-20 mb-16'>
-        <div className='bg-slate-900 text-white rounded-3xl p-8 md:p-10 shadow-xl grid grid-cols-2 md:grid-cols-4 gap-8 text-center divide-y-2 md:divide-y-0 md:divide-x divide-slate-800'>
+        {/* تم تحديث اتجاه الـ divide-x ليدعم الـ RTL والـ LTR ديناميكياً */}
+        <div className={`bg-slate-900 text-white rounded-3xl p-8 md:p-10 shadow-xl grid grid-cols-2 md:grid-cols-4 gap-8 text-center divide-y-2 md:divide-y-0 divide-slate-800 ${isRtl ? 'md:divide-x-reverse md:divide-x' : 'md:divide-x'}`}>
           <div className='flex flex-col gap-1.5 pt-6 md:pt-0'>
             <span className='text-3xl md:text-4xl font-extrabold text-blue-400'>12K+</span>
-            <span className='text-xs text-slate-400 font-medium uppercase tracking-wider'>Properties Ready</span>
+            <span className='text-xs text-slate-400 font-medium uppercase tracking-wider'>{t('stats_properties')}</span>
           </div>
           <div className='flex flex-col gap-1.5 pt-6 md:pt-0'>
             <span className='text-3xl md:text-4xl font-extrabold text-blue-400'>8K+</span>
-            <span className='text-xs text-slate-400 font-medium uppercase tracking-wider'>Happy Customers</span>
+            <span className='text-xs text-slate-400 font-medium uppercase tracking-wider'>{t('stats_customers')}</span>
           </div>
           <div className='flex flex-col gap-1.5 pt-6 md:pt-0'>
             <span className='text-3xl md:text-4xl font-extrabold text-blue-400'>150+</span>
-            <span className='text-xs text-slate-400 font-medium uppercase tracking-wider'>Expert Agents</span>
+            <span className='text-xs text-slate-400 font-medium uppercase tracking-wider'>{t('stats_agents')}</span>
           </div>
           <div className='flex flex-col gap-1.5 pt-6 md:pt-0'>
             <span className='text-3xl md:text-4xl font-extrabold text-blue-400'>10+</span>
-            <span className='text-xs text-slate-400 font-medium uppercase tracking-wider'>Years Experience</span>
+            <span className='text-xs text-slate-400 font-medium uppercase tracking-wider'>{t('stats_experience')}</span>
           </div>
         </div>
       </div>
@@ -48,13 +55,13 @@ export default function About() {
       <div className='max-w-5xl mx-auto px-4 py-8 grid grid-cols-1 md:grid-cols-2 gap-12 items-center mb-16'>
         <div className='flex flex-col gap-5'>
           <h2 className='text-2xl md:text-3xl font-bold text-slate-900 tracking-tight'>
-            Our Mission & Vision
+            {t('about_mission_title')}
           </h2>
           <p className='text-sm text-slate-500 leading-relaxed'>
-            Sahand Estate is a leading real estate agency that specializes in helping clients buy, sell, and rent properties in the most desirable neighborhoods. Our team of experienced agents is dedicated to providing exceptional service.
+            {t('about_mission_p1')}
           </p>
           <p className='text-sm text-slate-500 leading-relaxed'>
-            Our mission is to help our clients achieve their real estate goals by providing expert advice, personalized service, and a deep understanding of the local market. Whether you are looking to buy, sell, or rent a property, we are here to help you every step of the way.
+            {t('about_mission_p2')}
           </p>
         </div>
         
@@ -63,9 +70,9 @@ export default function About() {
           <div className='w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center shadow-sm'>
             <HiOutlineTrendingUp size={24} />
           </div>
-          <h3 className='text-xl font-bold text-slate-900'>Why Choose Us?</h3>
+          <h3 className='text-xl font-bold text-slate-900'>{t('about_why_title')}</h3>
           <p className='text-sm text-slate-500 leading-relaxed'>
-            Our team of agents has a wealth of experience and knowledge in the real estate industry, and we are committed to providing the highest level of service to our clients. We believe that buying or selling a home should be an exciting and rewarding experience.
+            {t('about_why_description')}
           </p>
         </div>
       </div>
@@ -73,8 +80,8 @@ export default function About() {
       {/* 🛡️ 4. Values Section (قيمنا الأساسية) */}
       <div className='max-w-6xl mx-auto px-4 pb-24'>
         <div className='text-center max-w-xl mx-auto flex flex-col gap-2 mb-12'>
-          <h2 className='text-2xl font-bold text-slate-900'>Our Core Values</h2>
-          <p className='text-sm text-slate-400'>The pillars that define our service and daily interaction.</p>
+          <h2 className='text-2xl font-bold text-slate-900'>{t('about_values_title')}</h2>
+          <p className='text-sm text-slate-400'>{t('about_values_subtitle')}</p>
         </div>
 
         <div className='grid grid-cols-1 md:grid-cols-3 gap-6'>
@@ -83,9 +90,9 @@ export default function About() {
             <div className='w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center transition-colors group-hover:bg-blue-600 group-hover:text-white'>
               <HiOutlineShieldCheck size={20} />
             </div>
-            <h4 className='font-bold text-slate-900 text-base'>Uncompromising Trust</h4>
+            <h4 className='font-bold text-slate-900 text-base'>{t('value_trust_title')}</h4>
             <p className='text-xs text-slate-500 leading-relaxed'>
-              We prioritize complete transparency and legal security in every transaction to guarantee your peace of mind.
+              {t('value_trust_desc')}
             </p>
           </div>
 
@@ -94,9 +101,9 @@ export default function About() {
             <div className='w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center transition-colors group-hover:bg-emerald-600 group-hover:text-white'>
               <HiOutlineHome size={20} />
             </div>
-            <h4 className='font-bold text-slate-900 text-base'>Premium Properties</h4>
+            <h4 className='font-bold text-slate-900 text-base'>{t('value_premium_title')}</h4>
             <p className='text-xs text-slate-500 leading-relaxed'>
-              Every listing on our platform undergoes rigorous checking to ensure it matches the highest living standards.
+              {t('value_premium_desc')}
             </p>
           </div>
 
@@ -105,9 +112,9 @@ export default function About() {
             <div className='w-10 h-10 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center transition-colors group-hover:bg-amber-600 group-hover:text-white'>
               <HiOutlineUserGroup size={20} />
             </div>
-            <h4 className='font-bold text-slate-900 text-base'>Client-Centric Care</h4>
+            <h4 className='font-bold text-slate-900 text-base'>{t('value_client_title')}</h4>
             <p className='text-xs text-slate-500 leading-relaxed'>
-              Our relationship doesn't end at signing. We provide end-to-end support for all your maintenance and logistics needs.
+              {t('value_client_desc')}
             </p>
           </div>
         </div>

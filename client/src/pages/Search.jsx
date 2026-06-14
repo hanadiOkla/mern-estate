@@ -1,10 +1,16 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom' 
 import ListingItem from '../components/ListingItem';
+// 1. استيراد خطاف الترجمة من react-i18next
+import { useTranslation } from "react-i18next";
 
 export default function Search() {
     const navigate = useNavigate();
     const location = useLocation();
+
+    // 2. تفعيل دالة الترجمة ومعرفة الاتجاه الحالي
+    const { t, i18n } = useTranslation();
+    const isRtl = i18n.dir() === 'rtl';
 
     const [ sidebardata, setSidebardata ] = useState({
         searchTerm: '',
@@ -116,31 +122,33 @@ export default function Search() {
 
     return (
         <div className='flex flex-col md:flex-row min-h-screen bg-slate-50/50'>
-            {/* القائمة الجانبية (Sidebar) بتصميم عصري وأنيق */}
-            <div className='p-8 bg-white border-b md:border-b-0 md:border-r border-slate-200/80 w-full md:w-80 lg:w-96 shrink-0 shadow-sm'>
+            {/* القائمة الجانبية (Sidebar): تم تعديل الحدود ومحاذاة الـ Sticky لتتوافق مع الاتجاهين */}
+            <div className={`p-8 bg-white border-b md:border-b-0 w-full md:w-80 lg:w-96 shrink-0 shadow-sm 
+                ${isRtl ? 'md:border-l border-slate-200/80' : 'md:border-r border-slate-200/80'}`}
+            >
                 <form onSubmit={handleSubmit} className='flex flex-col gap-7 sticky top-6'>
                     
                     {/* حقل البحث الرئيسي */}
-                    <div className='flex flex-col gap-2'>
-                        <label className='text-sm font-bold text-slate-700 tracking-wide'>Search Term</label>
+                    <div className={`flex flex-col gap-2 ${isRtl ? 'text-right' : 'text-left'}`}>
+                        <label className='text-sm font-bold text-slate-700 tracking-wide'>{t('search.search_term')}</label>
                         <input 
                             type="text"
                             id='searchTerm'
-                            placeholder='What are you looking for?...'
-                            className='border border-slate-200 rounded-xl p-3 w-full text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-slate-400 bg-slate-50/40'
+                            placeholder={t('search.placeholder')}
+                            className={`border border-slate-200 rounded-xl p-3 w-full text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-slate-400 bg-slate-50/40 ${isRtl ? 'text-right' : 'text-left'}`}
                             value={sidebardata.searchTerm}
                             onChange={handleChange}
                         />
                     </div>
 
-                    {/* فلاتر النوع: تحويل الـ Checkboxes العادية إلى أزرار فخمة (Chips) */}
-                    <div className='flex flex-col gap-2.5'>
-                        <label className='text-sm font-bold text-slate-700 tracking-wide'>Property Type</label>
-                        <div className='flex flex-wrap gap-2'>
+                    {/* فلاتر النوع: أزرار الـ Chips تفاعلية بالكامل */}
+                    <div className={`flex flex-col gap-2.5 ${isRtl ? 'text-right' : 'text-left'}`}>
+                        <label className='text-sm font-bold text-slate-700 tracking-wide'>{t('search.property_type')}</label>
+                        <div className={`flex flex-wrap gap-2 ${isRtl ? 'flex-row-reverse' : ''}`}>
                             {[
-                                { id: 'all', label: 'Rent & Sale' },
-                                { id: 'rent', label: 'For Rent' },
-                                { id: 'sale', label: 'For Sale' }
+                                { id: 'all', label: t('search.type_all') },
+                                { id: 'rent', label: t('search.type_rent') },
+                                { id: 'sale', label: t('search.type_sale') }
                             ].map((item) => (
                                 <label 
                                     key={item.id} 
@@ -164,18 +172,18 @@ export default function Search() {
                                     }`}
                             >
                                 <input type="checkbox" id="offer" checked={sidebardata.offer} onChange={handleChange} className="hidden" />
-                                Offer
+                                {t('search.offer')}
                             </label>
                         </div>
                     </div>
 
                     {/* فلاتر المميزات الإضافية */}
-                    <div className='flex flex-col gap-2.5'>
-                        <label className='text-sm font-bold text-slate-700 tracking-wide'>Amenities</label>
-                        <div className='flex flex-wrap gap-2'>
+                    <div className={`flex flex-col gap-2.5 ${isRtl ? 'text-right' : 'text-left'}`}>
+                        <label className='text-sm font-bold text-slate-700 tracking-wide'>{t('search.amenities')}</label>
+                        <div className={`flex flex-wrap gap-2 ${isRtl ? 'flex-row-reverse' : ''}`}>
                             {[
-                                { id: 'parking', label: 'Parking Space' },
-                                { id: 'furnished', label: 'Furnished' }
+                                { id: 'parking', label: t('search.parking') },
+                                { id: 'furnished', label: t('search.furnished') }
                             ].map((item) => (
                                 <label 
                                     key={item.id} 
@@ -193,45 +201,44 @@ export default function Search() {
                     </div>
 
                     {/* خيارات الترتيب والفرز */}
-                    <div className='flex flex-col gap-2'>
-                        <label className='text-sm font-bold text-slate-700 tracking-wide'>Sort By</label>
+                    <div className={`flex flex-col gap-2 ${isRtl ? 'text-right' : 'text-left'}`}>
+                        <label className='text-sm font-bold text-slate-700 tracking-wide'>{t('search.sort_by')}</label>
                         <select 
                             onChange={handleChange} 
                             value={`${sidebardata.sort}_${sidebardata.order}`} 
                             id="sort_order" 
-                            className='border border-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:border-blue-500 bg-slate-50/40 font-medium text-slate-700 cursor-pointer'
+                            className={`border border-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:border-blue-500 bg-slate-50/40 font-medium text-slate-700 cursor-pointer ${isRtl ? 'text-right' : 'text-left'}`}
                         >
-                            <option value="regularPrice_desc">Price: High to Low</option>
-                            <option value="regularPrice_asc">Price: Low to High</option>
-                            <option value="createdAt_desc">Latest Properties</option>
-                            <option value="createdAt_asc">Oldest Properties</option>
+                            <option value="regularPrice_desc">{t('search.sort_price_desc')}</option>
+                            <option value="regularPrice_asc">{t('search.sort_price_asc')}</option>
+                            <option value="createdAt_desc">{t('search.sort_latest')}</option>
+                            <option value="createdAt_asc">{t('search.sort_oldest')}</option>
                         </select>
                     </div>
 
-                    {/* زر البحث المحسن */}
+                    {/* زر تطبيق الفلاتر */}
                     <button className='bg-blue-600 text-white p-3.5 rounded-xl font-semibold uppercase hover:bg-blue-700 active:scale-[0.98] transition-all shadow-md shadow-blue-600/10 text-sm mt-2'>
-                        Apply Filters
+                        {t('search.apply_btn')}
                     </button>
                 </form>
             </div>
 
-            {/* قسم نتائج البحث (الـ Grid المتجاوب والذكي) */}
+            {/* قسم نتائج البحث */}
             <div className='flex-1 p-8 md:p-10'>
-                <h1 className='text-2xl font-bold border-b border-slate-200 pb-4 text-slate-800 tracking-tight'>
-                    Listing Results
+                <h1 className={`text-2xl font-bold border-b border-slate-200 pb-4 text-slate-800 tracking-tight ${isRtl ? 'text-right' : 'text-left'}`}>
+                    {t('search.results_title')}
                 </h1>
                 
-                {/* 🌟 هاد هو الـ Grid السحري لحل مشكلة توزيع الكاردات المتناسق */}
                 <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 py-8'>
                     {!loading && listings.length === 0 && (
                         <div className='col-span-full py-12 text-center'>
-                            <p className='text-lg text-slate-400 font-medium'>No properties found matching your criteria.</p>
+                            <p className='text-lg text-slate-400 font-medium'>{t('search.no_results')}</p>
                         </div>
                     )}
                     
                     {loading && (
                         <div className='col-span-full py-12 text-center'>
-                            <p className='text-lg text-blue-600 font-semibold animate-pulse'>Loading premium listings...</p>
+                            <p className='text-lg text-blue-600 font-semibold animate-pulse'>{t('search.loading')}</p>
                         </div>
                     )}
                     
@@ -246,7 +253,7 @@ export default function Search() {
                             onClick={onShowMoreClick}
                             className='text-sm bg-white border border-slate-200 text-slate-700 px-6 py-3 rounded-full font-semibold hover:border-slate-300 hover:bg-slate-50 transition-all shadow-sm active:scale-95'
                         >
-                            Show More Properties
+                            {t('search.show_more')}
                         </button>
                     </div>
                 )}

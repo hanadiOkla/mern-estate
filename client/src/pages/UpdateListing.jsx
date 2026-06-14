@@ -8,11 +8,18 @@ import {
 import { app } from '../firebase';
 import { useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
+// 1. استيراد خطاف الترجمة من react-i18next
+import { useTranslation } from 'react-i18next';
 
 export default function UpdateListing() {
   const { currentUser } = useSelector((state) => state.user);
   const navigate = useNavigate();
   const params = useParams();
+  
+  // 2. تفعيل دالة الترجمة ومعرفة الاتجاه الحالي
+  const { t, i18n } = useTranslation();
+  const isRtl = i18n.dir() === 'rtl';
+
   const [files, setFiles] = useState([]);
   const [formData, setFormData] = useState({
     imageUrls: [],
@@ -79,11 +86,11 @@ export default function UpdateListing() {
           setUploading(false);
          })
         .catch((err) => {
-          setImageUploadError('Image upload failed (2 mb max per image)');
+          setImageUploadError(t('listing.upload_err_size'));
           setUploading(false);
         });
     } else {
-      setImageUploadError('You can only upload 6 images per listing');
+      setImageUploadError(t('listing.upload_err_count'));
       setUploading(false);
     }
   };
@@ -146,9 +153,9 @@ export default function UpdateListing() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      if (formData.imageUrls.length < 1) return setError('You must upload at least one image');
+      if (formData.imageUrls.length < 1) return setError(t('listing.submit_err_images'));
       if (+formData.regularPrice < +formData.discountPrice)
-        return setError('Discount price must be lower than regular price');
+        return setError(t('listing.submit_err_discount'));
       
       setLoading(true);
       setError(false);
@@ -170,19 +177,16 @@ export default function UpdateListing() {
     }
   };
 
-  // Handles AI smart description generation
   const handleGenerateAI = async () => {
     try {
-      // [تحديث احترافي]: استبدال الـ alert بـ inline error منسق
       if (!formData.name || !formData.address || !formData.type) {
-        setAiError('⚠️ يرجى ملء حقول (اسم العقار، العنوان، ونوع العقار) أولاً لتوليد الوصف الذكي.');
+        setAiError(t('listing.ai_desc_missing_fields'));
         return;
       }
 
       setAiLoading(true);
       setAiError(null);
 
-      // [تعديل الأمان]: إضافة credentials: 'include' لتفادي خطأ 401 Unauthorized
       const res = await fetch('/api/listing/generate-ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -210,13 +214,11 @@ export default function UpdateListing() {
     }
   };
 
-  // Handles AI property valuation request
   const handleAIValuation = async (e) => {
     e.preventDefault();
     
-    // [تحديث احترافي]: استبدال الـ alert بـ inline error منسق في كرت التقييم
     if (!formData.address || !formData.type) {
-      setValError('⚠️ يرجى تحديد نوع العقار والعنوان الجغرافي أولاً ليتمكن النظام من تحليل الأسعار.');
+      setValError(t('listing.ai_val_missing_fields'));
       return;
     }
 
@@ -225,7 +227,6 @@ export default function UpdateListing() {
       setValError(null);
       setValuation(null);
 
-      // [تعديل الأمان]: إضافة credentials: 'include' لتفادي خطأ 401 Unauthorized
       const res = await fetch('/api/listing/evaluate-ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -244,19 +245,19 @@ export default function UpdateListing() {
       setValuation(data.valuation);
       setValLoading(false);
     } catch (err) {
-      setValError('An error occurred while connecting to the server for AI Valuation.');
+      setValError(t('listing.ai_val_conn_error'));
       setValLoading(false);
     }
   };
 
   return (
-    <div className='bg-slate-50/50 min-h-screen py-12 px-4 md:px-8'>
+    <div className='bg-slate-50/50 min-h-screen py-12 px-4 md:px-8' i18n={i18n.language}>
       <main className='max-w-6xl mx-auto flex flex-col gap-8'>
         
         {/* Main Header */}
-        <div>
-          <h1 className='text-3xl font-extrabold text-slate-900 tracking-tight'>Update Your Listing</h1>
-          <p className='text-sm text-slate-400 mt-1'>Modify the details below to update your property in the marketplace.</p>
+        <div className={isRtl ? 'text-right' : 'text-left'}>
+          <h1 className='text-3xl font-extrabold text-slate-900 tracking-tight'>{t('listing.update_title')}</h1>
+          <p className='text-sm text-slate-400 mt-1'>{t('listing.update_subtitle')}</p>
         </div>
         
         <form onSubmit={handleSubmit} className='grid grid-cols-1 lg:grid-cols-12 gap-8 items-start'>
@@ -264,19 +265,19 @@ export default function UpdateListing() {
           {/* Left Column: Property Details & Options */}
           <div className='lg:col-span-7 bg-white p-6 md:p-8 rounded-3xl shadow-xl shadow-slate-200/40 border border-slate-100 flex flex-col gap-5'>
             
-            <h2 className='text-lg font-bold text-slate-800 border-b border-slate-100 pb-3 flex items-center gap-2'>
+            <h2 className={`text-lg font-bold text-slate-800 border-b border-slate-100 pb-3 flex items-center gap-2 ${isRtl ? 'flex-row-reverse text-right' : 'text-left'}`}>
               <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
               </svg>
-              Property Information
+              {t('listing.sec_info_title')}
             </h2>
 
-            <div className='flex flex-col gap-1.5'>
-              <label className='text-xs font-bold text-slate-700 tracking-wide ml-1'>Property Title</label>
+            <div className={`flex flex-col gap-1.5 ${isRtl ? 'text-right' : 'text-left'}`}>
+              <label className={`text-xs font-bold text-slate-700 tracking-wide ${isRtl ? 'mr-1' : 'ml-1'}`}>{t('listing.label_title')}</label>
               <input
                 type='text'
-                placeholder='e.g., Luxury Apartment with Sea View'
-                className='border border-slate-200 rounded-xl p-3.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all bg-slate-50/20'
+                placeholder={t('listing.placeholder_title')}
+                className={`border border-slate-200 rounded-xl p-3.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all bg-slate-50/20 ${isRtl ? 'text-right' : 'text-left'}`}
                 id='name'
                 maxLength='62'
                 minLength='10'
@@ -286,40 +287,39 @@ export default function UpdateListing() {
               />
             </div>
 
-            <div className='flex flex-col gap-1.5'>
-              <div className='flex justify-between items-center flex-wrap gap-2'>
-                <label className='text-xs font-bold text-slate-700 tracking-wide ml-1'>Description</label>
+            <div className={`flex flex-col gap-1.5 ${isRtl ? 'text-right' : 'text-left'}`}>
+              <div className={`flex justify-between items-center flex-wrap gap-2 ${isRtl ? 'flex-row-reverse' : ''}`}>
+                <label className={`text-xs font-bold text-slate-700 tracking-wide ${isRtl ? 'mr-1' : 'ml-1'}`}>{t('listing.label_desc')}</label>
                 <button
                   type='button'
                   disabled={aiLoading}
                   onClick={handleGenerateAI}
                   className='bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-3 py-1.5 rounded-xl text-xs font-semibold uppercase hover:opacity-95 disabled:opacity-80 flex items-center gap-2 shadow-sm transition'
                 >
-                  {aiLoading ? 'جاري التوليد... ✨' : 'توليد وصف ذكي بالذكاء الاصطناعي ✨'}
+                  {aiLoading ? t('listing.ai_desc_loading') : t('listing.ai_desc_btn')}
                 </button>
               </div>
               <textarea
-                placeholder='Describe the property features, neighborhood, utilities...'
-                className='border border-slate-200 rounded-xl p-3.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all bg-slate-50/20 min-h-[120px]'
+                placeholder={t('listing.placeholder_desc')}
+                className={`border border-slate-200 rounded-xl p-3.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all bg-slate-50/20 min-h-[120px] ${isRtl ? 'text-right' : 'text-left'}`}
                 id='description'
                 required
                 onChange={handleChange}
                 value={formData.description}
               />
-              {/* قالب الخطأ المنسق والتفاعلي للـ AI Description */}
               {aiError && (
-                <div className='bg-amber-50 text-amber-700 text-xs font-semibold p-3 rounded-xl border border-amber-200/70 mt-1 animate-fadeIn text-right' dir="rtl">
+                <div className={`bg-amber-50 text-amber-700 text-xs font-semibold p-3 rounded-xl border border-amber-200/70 mt-1 animate-fadeIn ${isRtl ? 'text-right' : 'text-left'}`} dir={isRtl ? 'rtl' : 'ltr'}>
                   {aiError}
                 </div>
               )}
             </div>
 
-            <div className='flex flex-col gap-1.5'>
-              <label className='text-xs font-bold text-slate-700 tracking-wide ml-1'>Address</label>
+            <div className={`flex flex-col gap-1.5 ${isRtl ? 'text-right' : 'text-left'}`}>
+              <label className={`text-xs font-bold text-slate-700 tracking-wide ${isRtl ? 'mr-1' : 'ml-1'}`}>{t('listing.label_address')}</label>
               <input
                 type='text'
-                placeholder='Full location address'
-                className='border border-slate-200 rounded-xl p-3.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all bg-slate-50/20'
+                placeholder={t('listing.placeholder_address')}
+                className={`border border-slate-200 rounded-xl p-3.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all bg-slate-50/20 ${isRtl ? 'text-right' : 'text-left'}`}
                 id='address'
                 required
                 onChange={handleChange}
@@ -329,8 +329,8 @@ export default function UpdateListing() {
 
             {/* Amenities & Checkboxes */}
             <div className='bg-slate-50/50 p-4 rounded-2xl border border-slate-100 mt-2'>
-              <p className='text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 ml-1'>Amenities & Options</p>
-              <div className='flex gap-5 flex-wrap'>
+              <p className={`text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 ${isRtl ? 'text-right mr-1' : 'text-left ml-1'}`}>{t('listing.sec_amenities_title')}</p>
+              <div className={`flex gap-5 flex-wrap ${isRtl ? 'flex-row-reverse' : ''}`}>
                 <label className='flex items-center gap-2.5 bg-white px-4 py-2.5 rounded-xl border border-slate-200 cursor-pointer hover:border-blue-300 transition-colors shadow-sm select-none'>
                   <input
                     type='checkbox'
@@ -339,7 +339,7 @@ export default function UpdateListing() {
                     onChange={handleChange}
                     checked={formData.type === 'sale'}
                   />
-                  <span className='text-sm font-medium text-slate-700'>Sell Property</span>
+                  <span className='text-sm font-medium text-slate-700'>{t('listing.opt_sell')}</span>
                 </label>
 
                 <label className='flex items-center gap-2.5 bg-white px-4 py-2.5 rounded-xl border border-slate-200 cursor-pointer hover:border-blue-300 transition-colors shadow-sm select-none'>
@@ -350,7 +350,7 @@ export default function UpdateListing() {
                     onChange={handleChange}
                     checked={formData.type === 'rent'}
                   />
-                  <span className='text-sm font-medium text-slate-700'>Rent Property</span>
+                  <span className='text-sm font-medium text-slate-700'>{t('listing.opt_rent')}</span>
                 </label>
 
                 <label className='flex items-center gap-2.5 bg-white px-4 py-2.5 rounded-xl border border-slate-200 cursor-pointer hover:border-blue-300 transition-colors shadow-sm select-none'>
@@ -361,7 +361,7 @@ export default function UpdateListing() {
                     onChange={handleChange}
                     checked={formData.parking}
                   />
-                  <span className='text-sm font-medium text-slate-700'>Parking Spot</span>
+                  <span className='text-sm font-medium text-slate-700'>{t('listing.opt_parking')}</span>
                 </label>
 
                 <label className='flex items-center gap-2.5 bg-white px-4 py-2.5 rounded-xl border border-slate-200 cursor-pointer hover:border-blue-300 transition-colors shadow-sm select-none'>
@@ -372,7 +372,7 @@ export default function UpdateListing() {
                     onChange={handleChange}
                     checked={formData.furnished}
                   />
-                  <span className='text-sm font-medium text-slate-700'>Furnished</span>
+                  <span className='text-sm font-medium text-slate-700'>{t('listing.opt_furnished')}</span>
                 </label>
 
                 <label className='flex items-center gap-2.5 bg-white px-4 py-2.5 rounded-xl border border-slate-200 cursor-pointer hover:border-blue-300 transition-colors shadow-sm select-none'>
@@ -383,7 +383,7 @@ export default function UpdateListing() {
                     onChange={handleChange}
                     checked={formData.offer}
                   />
-                  <span className='text-sm font-medium text-slate-700'>Special Offer</span>
+                  <span className='text-sm font-medium text-slate-700'>{t('listing.opt_offer')}</span>
                 </label>
               </div>
             </div>
@@ -391,7 +391,7 @@ export default function UpdateListing() {
             {/* Numeric Fields */}
             <div className='grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4 mt-2'>
               <div className='flex flex-col gap-1.5'>
-                <label className='text-xs font-bold text-slate-600 ml-1'>Beds</label>
+                <label className={`text-xs font-bold text-slate-600 ${isRtl ? 'text-right mr-1' : 'text-left ml-1'}`}>{t('listing.num_beds')}</label>
                 <input
                   type='number'
                   id='bedrooms'
@@ -405,7 +405,7 @@ export default function UpdateListing() {
               </div>
 
               <div className='flex flex-col gap-1.5'>
-                <label className='text-xs font-bold text-slate-600 ml-1'>Baths</label>
+                <label className={`text-xs font-bold text-slate-600 ${isRtl ? 'text-right mr-1' : 'text-left ml-1'}`}>{t('listing.num_baths')}</label>
                 <input
                   type='number'
                   id='bathrooms'
@@ -419,8 +419,8 @@ export default function UpdateListing() {
               </div>
 
               <div className='flex flex-col gap-1.5'>
-                <label className='text-xs font-bold text-slate-600 ml-1'>
-                  Regular Price {formData.type === 'rent' && <span className='text-slate-400 font-normal'>($/mo)</span>}
+                <label className={`text-xs font-bold text-slate-600 ${isRtl ? 'text-right mr-1' : 'text-left ml-1'}`}>
+                  {t('listing.num_price')} {formData.type === 'rent' && <span className='text-slate-400 font-normal'>{t('listing.price_period')}</span>}
                 </label>
                 <input
                   type='number'
@@ -436,8 +436,8 @@ export default function UpdateListing() {
 
               {formData.offer && (
                 <div className='flex flex-col gap-1.5'>
-                  <label className='text-xs font-bold text-rose-600 ml-1'>
-                    Discount Price {formData.type === 'rent' && <span className='text-rose-400 font-normal'>($/mo)</span>}
+                  <label className={`text-xs font-bold text-rose-600 ${isRtl ? 'text-right mr-1' : 'text-left ml-1'}`}>
+                    {t('listing.num_discount')} {formData.type === 'rent' && <span className='text-rose-400 font-normal'>{t('listing.price_period')}</span>}
                   </label>
                   <input
                     type='number'
@@ -454,11 +454,11 @@ export default function UpdateListing() {
             </div>
 
             {/* AI Valuation Interactive Section Component */}
-            <div className='bg-slate-50 p-5 rounded-2xl border border-slate-200 shadow-sm mt-3' dir="rtl">
-              <div className='flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-2'>
+            <div className='bg-slate-50 p-5 rounded-2xl border border-slate-200 shadow-sm mt-3' dir={isRtl ? 'rtl' : 'ltr'}>
+              <div className={`flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-2 ${isRtl ? 'flex-row-reverse' : ''}`}>
                 <div className='flex items-center gap-2'>
                   <span className='text-xl'>💡</span>
-                  <h3 className='text-sm font-bold text-slate-800'>هل تحتار في تحديد السعر العادل لعقارك؟</h3>
+                  <h3 className='text-sm font-bold text-slate-800'>{t('listing.ai_val_box_title')}</h3>
                 </div>
                 <button
                   type='button'
@@ -466,42 +466,41 @@ export default function UpdateListing() {
                   disabled={valLoading}
                   className='bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold rounded-xl text-xs px-4 py-2.5 hover:opacity-95 shadow-sm transition-all disabled:opacity-50'
                 >
-                  {valLoading ? 'جاري التحليل المالي...' : '✨ اقترح عليّ سعراً عادلاً (AI Valuation)'}
+                  {valLoading ? t('listing.ai_val_loading') : t('listing.ai_val_btn')}
                 </button>
               </div>
 
-              {/* قالب الخطأ المنظم الخاص بالـ Valuation */}
               {valError && (
-                <div className='bg-amber-50 text-amber-700 text-xs font-semibold p-3 rounded-xl border border-amber-200/70 mt-3 text-right'>
+                <div className={`bg-amber-50 text-amber-700 text-xs font-semibold p-3 rounded-xl border border-amber-200/70 mt-3 ${isRtl ? 'text-right' : 'text-left'}`}>
                   {valError}
                 </div>
               )}
 
               {valuation && (
-                <div className='flex flex-col gap-3 text-right bg-white p-4 rounded-xl border border-slate-100 mt-4 animate-fadeIn'>
+                <div className={`flex flex-col gap-3 bg-white p-4 rounded-xl border border-slate-100 mt-4 animate-fadeIn ${isRtl ? 'text-right' : 'text-left'}`}>
                   <div>
-                    <p className='text-xs text-slate-400 mb-1'>القيمة السوقية المقترحة من الـ AI لهذا العقار:</p>
+                    <p className='text-xs text-slate-400 mb-1'>{t('listing.ai_val_est_title')}</p>
                     <p className='text-lg font-bold text-emerald-600 font-mono' dir="ltr">
                       ${valuation.estimatedMinPrice?.toLocaleString()} - ${valuation.estimatedMaxPrice?.toLocaleString()}
                     </p>
                     <div className='flex items-center gap-2 mt-1'>
-                      <p className='text-xs text-slate-400'>حالة التسعير المبدئي للـ Cover:</p>
+                      <p className='text-xs text-slate-400'>{t('listing.ai_val_status_label')}</p>
                       <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${valuation.priceStatus === 'Good Deal' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : valuation.priceStatus === 'Fair Price' ? 'bg-blue-50 text-blue-600 border border-blue-100' : 'bg-amber-50 text-amber-600 border border-amber-100'}`}>
                         {valuation.priceStatus}
                       </span>
                     </div>
                     <p className='text-[10px] text-slate-400 mt-1 leading-relaxed'>
-                      * يعتمد هذا النطاق الاسترشادي على تحليل مواصفات العقار المدخلة وعنوان المنطقة الجغرافية.
+                      {t('listing.ai_val_disclaimer')}
                     </p>
                   </div>
                   
                   <div className='border-t border-slate-100 pt-3 grid grid-cols-1 md:grid-cols-2 gap-3'>
                     <div className='bg-slate-50/70 p-3 rounded-xl border border-slate-100'>
-                      <h4 className='font-bold text-slate-700 text-xs mb-1'>📈 اتجاهات السوق في المنطقة:</h4>
+                      <h4 className='font-bold text-slate-700 text-xs mb-1'>{t('listing.ai_val_trends_title')}</h4>
                       <p className='text-slate-600 text-xs leading-relaxed'>{valuation.marketTrend}</p>
                     </div>
                     <div className='bg-slate-50/70 p-3 rounded-xl border border-slate-100'>
-                      <h4 className='font-bold text-slate-700 text-xs mb-1'>🎯 نصيحة استراتيجية للتسعير:</h4>
+                      <h4 className='font-bold text-slate-700 text-xs mb-1'>{t('listing.ai_val_advice_title')}</h4>
                       <p className='text-slate-600 text-xs leading-relaxed'>{valuation.investmentAdvice}</p>
                     </div>
                   </div>
@@ -514,16 +513,16 @@ export default function UpdateListing() {
           {/* Right Column: Media Upload */}
           <div className='lg:col-span-5 flex flex-col gap-6'>
             <div className='bg-white p-6 md:p-8 rounded-3xl shadow-xl shadow-slate-200/40 border border-slate-100 flex flex-col gap-5'>
-              <h2 className='text-lg font-bold text-slate-800 border-b border-slate-100 pb-3 flex items-center gap-2'>
+              <h2 className={`text-lg font-bold text-slate-800 border-b border-slate-100 pb-3 flex items-center gap-2 ${isRtl ? 'flex-row-reverse text-right' : 'text-left'}`}>
                 <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
-                Media Gallery
+                {t('listing.sec_media_title')}
               </h2>
               
-              <div>
-                <p className='text-xs font-bold text-slate-700 tracking-wide mb-1'>Upload Images</p>
-                <p className='text-xs text-slate-400 mb-3'>The first image will be set as the main cover (Max 6 images).</p>
+              <div className={isRtl ? 'text-right' : 'text-left'}>
+                <p className='text-xs font-bold text-slate-700 tracking-wide mb-1'>{t('listing.media_upload_label')}</p>
+                <p className='text-xs text-slate-400 mb-3'>{t('listing.media_upload_subtitle')}</p>
                 
                 <div className='flex gap-3'>
                   <input
@@ -540,7 +539,7 @@ export default function UpdateListing() {
                     onClick={handleImageSubmit}
                     className='px-4 text-xs font-bold text-emerald-600 border border-emerald-200 rounded-xl uppercase hover:bg-emerald-50 disabled:opacity-70 transition-all shrink-0'
                   >
-                    {uploading ? 'Uploading...' : 'Upload'}
+                    {uploading ? t('listing.media_uploading_btn') : t('listing.media_upload_btn')}
                   </button>
                 </div>
                 {imageUploadError && <p className='text-red-500 text-xs font-medium mt-2 bg-red-50 p-2 rounded-lg text-center'>{imageUploadError}</p>}
@@ -552,16 +551,16 @@ export default function UpdateListing() {
                   {formData.imageUrls.map((url, index) => (
                     <div
                       key={url}
-                      className='flex justify-between p-2.5 bg-white border border-slate-100 items-center rounded-xl shadow-sm'
+                      className={`flex justify-between p-2.5 bg-white border border-slate-100 items-center rounded-xl shadow-sm ${isRtl ? 'flex-row-reverse' : ''}`}
                     >
-                      <div className='flex items-center gap-3 truncate'>
+                      <div className={`flex items-center gap-3 truncate ${isRtl ? 'flex-row-reverse' : ''}`}>
                         <img
                           src={url}
                           alt='listing'
                           className='w-14 h-14 object-cover rounded-lg border border-slate-100'
                         />
                         <span className='text-xs font-medium text-slate-500'>
-                          {index === 0 ? '🏆 Cover' : `Image ${index + 1}`}
+                          {index === 0 ? `🏆 ${t('listing.media_cover_badge')}` : `${t('listing.media_img_badge')} ${index + 1}`}
                         </span>
                       </div>
                       <button
@@ -569,7 +568,7 @@ export default function UpdateListing() {
                         onClick={() => triggerDeleteModal(index)}
                         className='text-xs font-bold text-rose-600 hover:bg-rose-50 px-3 py-1.5 rounded-lg transition-all uppercase'
                       >
-                        Delete
+                        {t('listing.media_delete_btn')}
                       </button>
                     </div>
                   ))}
@@ -581,7 +580,7 @@ export default function UpdateListing() {
                   disabled={loading || uploading}
                   className='w-full bg-blue-600 text-white rounded-xl p-3.5 font-semibold uppercase hover:bg-blue-700 active:scale-[0.99] transition-all text-sm shadow-md shadow-blue-600/10 disabled:opacity-70'
                 >
-                  {loading ? 'Updating Property...' : 'Update Listing'}
+                  {loading ? t('listing.submit_loading') : t('listing.submit_btn')}
                 </button>
                 {error && <p className='text-red-500 text-xs font-medium text-center mt-1 bg-red-50 p-2 rounded-lg border border-red-100'>{error}</p>}
               </div>
@@ -597,31 +596,31 @@ export default function UpdateListing() {
           <div className='bg-white rounded-2xl max-w-md w-full shadow-xl border border-slate-100 overflow-hidden transform scale-100 transition-all duration-300'>
             <div className='bg-slate-50 p-4 border-b border-slate-100 text-center'>
               <h3 className='text-md font-bold text-slate-800 uppercase tracking-wider'>
-                Confirmation Required
+                {t('listing.modal_title')}
               </h3>
             </div>
             <div className='p-6 text-center flex flex-col gap-2'>
               <p className='text-slate-700 font-semibold text-base'>
-                Do you want to permanently delete this image?
+                {t('listing.modal_desc')}
               </p>
               <p className='text-xs text-slate-400'>
-                This action cannot be undone.
+                {t('listing.modal_subdesc')}
               </p>
             </div>
-            <div className='flex gap-3 p-4 bg-slate-50 border-t border-slate-100 justify-center'>
+            <div className={`flex gap-3 p-4 bg-slate-50 border-t border-slate-100 justify-center ${isRtl ? 'flex-row-reverse' : ''}`}>
               <button
                 type='button'
                 onClick={() => setShowModal(false)}
                 className='px-5 py-2.5 bg-slate-200 text-slate-700 font-semibold rounded-xl text-sm hover:bg-slate-300 transition-colors shadow-xs'
               >
-                ✕ Cancel
+                ✕ {t('listing.modal_cancel')}
               </button>
               <button
                 type='button'
                 onClick={handleConfirmDelete}
                 className='px-5 py-2.5 bg-red-500 text-white font-semibold rounded-xl text-sm hover:bg-red-600 transition-colors shadow-md flex items-center gap-1'
               >
-                🗑️ Confirm Delete
+                🗑️ {t('listing.modal_confirm')}
               </button>
             </div>
           </div>
