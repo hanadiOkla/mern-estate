@@ -188,7 +188,6 @@ export const generateAIDescription = async (req, res, next) => {
 };
 
 export const getAIValuation = async (req, res, next) => {
-  // استقبال البيانات المتاحة للعقار من الـ Frontend
   const { name, type, address, bedrooms, bathrooms, furnished, parking, regularPrice } = req.body;
 
   if (!address || !type) {
@@ -199,80 +198,58 @@ export const getAIValuation = async (req, res, next) => {
   }
 
   try {
-
-   /*  // 💡 كود تجريبي مؤقت لتفادي مشكلة الرصيد واختبار الواجهة
-    const mockValuation = {
-      estimatedMinPrice: 850000,
-      estimatedMaxPrice: 950000,
-      priceStatus: "Good Deal",
-      marketTrend: "تشهد المنطقة نمواً مستمراً بنسبة 8% سنوياً بسبب المشاريع البنيوية الجديدة المقامة بالقرب من الموقع.",
-      investmentAdvice: "السعر الحالي يعتبر لُقطة ومناسب جداً للشراء كفرصة استثمارية طويلة الأجل."
-    };
-
-    return res.status(200).json({
-      success: true,
-      valuation: mockValuation
-    }); */
-    // صياغة الـ Prompt وهندسته ليُرجع النتيجة بصيغة JSON حصراً
     const prompt = `
-    You are an expert real estate financial analyst and certified property appraiser.
-    Analyze the following property details and generate a precise valuation in RAW JSON format only.
+    You are an expert real estate financial analyst. Analyze the following property details and generate a precise valuation in RAW JSON format only.
 
     Property Context:
-    - Name/Title: ${name || 'N/A'}
+    - Name/Title: ${name || "N/A"}
     - Property Type: ${type}
     - Location/Address: ${address}
     - Specs: ${bedrooms} Bedrooms, ${bathrooms} Bathrooms
-    - Amenities: ${furnished ? 'Furnished' : 'Unfurnished'}, ${parking ? 'Has Parking' : 'No Private Parking'}
-    - Listed Price by Owner: ${regularPrice ? regularPrice : 'Not provided'}
+    - Amenities: ${furnished ? "Furnished" : "Unfurnished"}, ${parking ? "Has Parking" : "No Private Parking"}
+    - Listed Price by Owner: ${regularPrice ? regularPrice : "Not provided"}
 
     STRICT OUTPUT RULES:
-    1. You MUST respond ONLY with a raw JSON object. Do not wrap it in markdown block tags like \`\`\`json or \`\`\`. No text before or after. The entire output must be valid for JSON.parse().
-    2. All price values MUST be numbers only (no commas, no currency symbols).
-    3. "estimatedMinPrice" MUST be lower than "estimatedMaxPrice".
-    4. If no listed price is provided, set "priceStatus" to "Unknown".
-    5. IMPORTANT FOR ARABIC TEXT: "marketTrend" and "investmentAdvice" MUST be single-line strings. Never use unescaped double quotes (") inside the text.
-    6. PRICE COMPARISON LOGIC (MANDATORY):
-    - If listed price < estimatedMinPrice → "Good Deal"
-    - If listed price is between min and max → "Fair Price"
-    - If listed price > estimatedMaxPrice → "Overpriced"
-    - If no listed price → "Unknown"
+    1. Respond ONLY with a raw JSON object. No markdown block tags.
+    2. All price values MUST be numbers only.
+    3. PRICE COMPARISON LOGIC: Listed price vs Estimated range.
 
-    The JSON object MUST strictly follow this schema:
+    The JSON object MUST strictly follow this bilingual schema (Return BOTH Arabic and English insights):
     {
-    "estimatedMinPrice": Number,
-    "estimatedMaxPrice": Number,
-    "priceStatus": "Good Deal" | "Fair Price" | "Overpriced" | "Unknown",
-    "marketTrend": "String (Write in Arabic)",
-    "investmentAdvice": "String (Write in Arabic)"
+      "estimatedMinPrice": Number,
+      "estimatedMaxPrice": Number,
+      "priceStatus": "Good Deal" | "Fair Price" | "Overpriced" | "Unknown",
+      "marketTrend": {
+        "en": "String in English",
+        "ar": "String in professional Arabic (العربية الفصحى)"
+      },
+      "investmentAdvice": {
+        "en": "String in English",
+        "ar": "String in professional Arabic (العربية الفصحى)"
+      }
     }
     `;
 
-    // الاتصال بـ OpenAI
     const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [{ role: 'user', content: prompt }],
-      temperature: 0.4, // حرارة منخفضة لضمان دقة التحليل المالي والالتزام بـ JSON
+      model: "gpt-4o-mini",
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.3,
+      response_format: { type: "json_object" },
     });
 
-    // استخراج النص وتحويله مباشرة لكائن JavaScript (JSON)
     let rawContent = response.choices[0].message.content.trim();
-    if (rawContent.startsWith("```")) {
-      rawContent = rawContent.replace(/^```json|```$/g, "").trim();
-    }
     
+    // 💡 تنظيف متقدم لإزالة كتل الـ markdown بأي شكل جاءت به
+    rawContent = rawContent.replace(/^```json\s*|```$/g, "").trim();
+
     const valuationData = JSON.parse(rawContent);
 
-    // إرسال البيانات المنظمة والتحليلات للـ Frontend
     res.status(200).json({
       success: true,
-      valuation: valuationData
+      valuation: valuationData,
     });
-
   } catch (error) {
     console.error("AI Valuation Error:", error);
-    // إذا فشل الـ Parsing أو الـ API، نمرر الخطأ للميدل وير
     next(error);
   }
 };
-

@@ -4,27 +4,21 @@
   "search_placeholder": "Search properties, areas...",
   "sign_in": "Sign In",
   "dir": "ltr",
-  
   "about_journey": "Our Journey",
   "about_title_1": "About",
   "about_title_2": "Sahand Estate",
   "about_description": "We are dedicated to making the process of buying, renting, and selling real estate simple, transparent, and seamless for everyone.",
-  
   "stats_properties": "Properties Ready",
   "stats_customers": "Happy Customers",
   "stats_agents": "Expert Agents",
   "stats_experience": "Years Experience",
-  
   "about_mission_title": "Our Mission & Vision",
   "about_mission_p1": "Sahand Estate is a leading real estate agency that specializes in helping clients buy, sell, and rent properties in the most desirable neighborhoods. Our team of experienced agents is dedicated to providing exceptional service.",
   "about_mission_p2": "Our mission is to help our clients achieve their real estate goals by providing expert advice, personalized service, and a deep understanding of the local market. Whether you are looking to buy, sell, or rent a property, we are here to help you every step of the way.",
-  
   "about_why_title": "Why Choose Us?",
   "about_why_description": "Our team of agents has a wealth of experience and knowledge in the real estate industry, and we are committed to providing the highest level of service to our clients. We believe that buying or selling a home should be an exciting and rewarding experience.",
-  
   "about_values_title": "Our Core Values",
   "about_values_subtitle": "The pillars that define our service and daily interaction.",
-  
   "value_trust_title": "Uncompromising Trust",
   "value_trust_desc": "We prioritize complete transparency and legal security in every transaction to guarantee your peace of mind.",
   "value_premium_title": "Premium Properties",
@@ -54,7 +48,6 @@
   "lbl_regular_price": "Regular Price",
   "lbl_discount_price": "Discount Price",
   "mo": "$/mo",
-  
   "ai_val_box_title": "Unsure about setting the right price?",
   "btn_ai_evaluate": "✨ Suggest a Fair Price (AI Valuation)",
   "btn_ai_evaluating": "Analyzing Market Financials...",
@@ -64,7 +57,6 @@
   "ai_val_disclaimer": "* This guideline range is based on the provided attributes and the geographic neighborhood data.",
   "ai_val_trends": "📈 Market Trends in Area:",
   "ai_val_advice": "🎯 Strategic Pricing Advice:",
-  
   "media_gallery": "Media Gallery",
   "upload_images_lbl": "Upload Images",
   "upload_images_hint": "The first image will be set as the main cover (Max 6 images).",
@@ -223,9 +215,7 @@
     "modal_desc": "Do you want to permanently delete this image?",
     "modal_subdesc": "This action cannot be undone.",
     "modal_cancel": "Cancel",
-    "modal_confirm": "Confirm Delete"
-  },
-  "listing": {
+    "modal_confirm": "Confirm Delete",
     "forRent": "For Rent",
     "forSale": "For Sale",
     "perMonth": "/ month",
@@ -263,5 +253,4 @@
     "privacyPolicy": "Privacy Policy",
     "termsOfService": "Terms of Service"
   }
-
 }
