@@ -117,13 +117,18 @@ export const getListings = async (req, res, next) => {
   }
 };
 
+
+
 // تهيئة مكتبة OpenAI (ستقرأ المفتاح تلقائياً من ملف .env الموجود في الجذر)
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+/**
+ * 1. توليد وصف ذكي للعقار (AI Description)
+ * تم تحديثها لتعيد JSON مهيكل ومنظم باللغتين لمنع تشوه واجهات المستخدم
+ */
 export const generateAIDescription = async (req, res, next) => {
-  // استقبال البيانات المطابقة تماماً للـ Schema الخاصة بكِ من الـ Frontend
   const {
     name,
     type,
@@ -135,7 +140,7 @@ export const generateAIDescription = async (req, res, next) => {
     offer,
   } = req.body;
 
-  // التحقق من وجود البيانات الأساسية اللازمة لصياغة نص تسويقي ذكي
+  // التحقق من وجود البيانات الأساسية اللازمة
   if (!name || !type || !address) {
     return res.status(400).json({
       success: false,
@@ -144,49 +149,63 @@ export const generateAIDescription = async (req, res, next) => {
   }
 
   try {
-    // صياغة الـ Prompt بناءً على حقول الـ Schema الفعلية
     const prompt = `
-        You are an expert real estate marketer. Based on the following property details, 
-        generate a professional, highly engaging, and SEO‑optimized description in BOTH Arabic and English.
+      You are an expert real estate marketer. Based on the following property details, 
+      generate a professional, highly engaging, and SEO‑optimized description object in RAW JSON format.
 
-        Property Details:
-        - Property Name: ${name}
-        - Deal Type: ${type} (e.g., For Rent, For Sale)
-        - Location: ${address}
-        - Specifications: ${bedrooms} bedrooms, ${bathrooms} bathrooms
-        - Features: ${furnished ? "Fully Furnished" : "Unfurnished"}, ${parking ? "Private Parking Available" : "No Private Parking"}
-        - Special Offer: ${offer ? "Includes a special discount or promotional offer" : "Standard pricing"}
+      Property Details:
+      - Property Name: ${name}
+      - Deal Type: ${type} (e.g., rent, sale)
+      - Location: ${address}
+      - Specifications: ${bedrooms} bedrooms, ${bathrooms} bathrooms
+      - Features: ${furnished ? "Fully Furnished" : "Unfurnished"}, ${parking ? "Private Parking Available" : "No Private Parking"}
+      - Special Offer: ${offer ? "Includes a special discount or promotional offer" : "Standard pricing"}
 
-        Requirements:
-        1. Provide a catchy architectural-style title for the property in both Arabic and English.
-        2. Write an emotional yet professional marketing description (first Arabic, then English).
-        3. Add a bullet‑point list highlighting the key selling features.
-        4. End with relevant real estate hashtags.
-        5. Do NOT include placeholders; output clean, ready‑to‑publish text only.
-        6. Keep the tone premium, clear, and appealing for buyers and renters.
-        `;
+      STRICT OUTPUT RULES:
+      1. Respond ONLY with a raw JSON object matching the schema below.
+      2. Do NOT include markdown code blocks (like \`\`\`json) or conversational text.
+      3. Provide a premium marketing description tailored to each language.
 
-    // الاتصال بالـ API باستخدام النموذج الموفر والسريع gpt-4o-mini
+      JSON Schema Specification:
+      {
+        "title": {
+          "en": "Catchy architectural-style title in English",
+          "ar": "عنوان جذاب بأسلوب معماري راقي باللغة العربية"
+        },
+        "description": {
+          "en": "Emotional and professional marketing text in English with bullet points for key features and relevant hashtags.",
+          "ar": "نص تسويقي احترافي ومؤثر باللغة العربية الفصحى يتضمن نقاطاً بارزة لأهم الميزات والهاشتاقات العقارية المناسبة."
+        }
+      }
+    `;
+
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [{ role: "user", content: prompt }],
       temperature: 0.7,
-      max_tokens: 800,
+      // ✨ إجبار الموديل على إخراج JSON نظيف لمعالجة النصوص بشكل احترافي
+      response_format: { type: "json_object" }, 
     });
 
-    const aiGeneratedText = response.choices[0].message.content;
+    let rawContent = response.choices[0].message.content.trim();
+    
+    // ✨ Response Parsing المعالجة والتنظيف المتقدم
+    rawContent = rawContent.replace(/^```json\s*|```$/g, "").trim();
+    const parsedDescription = JSON.parse(rawContent);
 
-    // إرجاع النص الجاهز للـ Frontend ليوضع مباشرة في حقل description
     res.status(200).json({
       success: true,
-      description: aiGeneratedText,
+      data: parsedDescription, // يعيد كائن يحتوي على title و description باللغتين
     });
   } catch (error) {
-    // تمرير الخطأ لـ Middleware معالجة الأخطاء الخاص بمشروعك
     next(error);
   }
 };
 
+/**
+ * 2. التقييم المالي الذكي للعقار (AI Valuation)
+ * مجهزة ومنظفة بالكامل للاستخدام الآمن في الإنتاج الفعلي
+ */
 export const getAIValuation = async (req, res, next) => {
   const { name, type, address, bedrooms, bathrooms, furnished, parking, regularPrice } = req.body;
 
@@ -199,35 +218,35 @@ export const getAIValuation = async (req, res, next) => {
 
   try {
     const prompt = `
-    You are an expert real estate financial analyst. Analyze the following property details and generate a precise valuation in RAW JSON format only.
+      You are an expert real estate financial analyst. Analyze the following property details and generate a precise valuation in RAW JSON format only.
 
-    Property Context:
-    - Name/Title: ${name || "N/A"}
-    - Property Type: ${type}
-    - Location/Address: ${address}
-    - Specs: ${bedrooms} Bedrooms, ${bathrooms} Bathrooms
-    - Amenities: ${furnished ? "Furnished" : "Unfurnished"}, ${parking ? "Has Parking" : "No Private Parking"}
-    - Listed Price by Owner: ${regularPrice ? regularPrice : "Not provided"}
+      Property Context:
+      - Name/Title: ${name || "N/A"}
+      - Property Type: ${type}
+      - Location/Address: ${address}
+      - Specs: ${bedrooms} Bedrooms, ${bathrooms} Bathrooms
+      - Amenities: ${furnished ? "Furnished" : "Unfurnished"}, ${parking ? "Has Parking" : "No Private Parking"}
+      - Listed Price by Owner: ${regularPrice ? regularPrice : "Not provided"}
 
-    STRICT OUTPUT RULES:
-    1. Respond ONLY with a raw JSON object. No markdown block tags.
-    2. All price values MUST be numbers only.
-    3. PRICE COMPARISON LOGIC: Listed price vs Estimated range.
+      STRICT OUTPUT RULES:
+      1. Respond ONLY with a raw JSON object. No markdown block tags.
+      2. All price values MUST be numbers only.
+      3. PRICE COMPARISON LOGIC: Compare Listed price vs Estimated range to determine priceStatus.
 
-    The JSON object MUST strictly follow this bilingual schema (Return BOTH Arabic and English insights):
-    {
-      "estimatedMinPrice": Number,
-      "estimatedMaxPrice": Number,
-      "priceStatus": "Good Deal" | "Fair Price" | "Overpriced" | "Unknown",
-      "marketTrend": {
-        "en": "String in English",
-        "ar": "String in professional Arabic (العربية الفصحى)"
-      },
-      "investmentAdvice": {
-        "en": "String in English",
-        "ar": "String in professional Arabic (العربية الفصحى)"
+      The JSON object MUST strictly follow this bilingual schema:
+      {
+        "estimatedMinPrice": Number,
+        "estimatedMaxPrice": Number,
+        "priceStatus": "Good Deal" | "Fair Price" | "Overpriced" | "Unknown",
+        "marketTrend": {
+          "en": "String in English",
+          "ar": "String in professional Arabic (العربية الفصحى)"
+        },
+        "investmentAdvice": {
+          "en": "String in English",
+          "ar": "String in professional Arabic (العربية الفصحى)"
+        }
       }
-    }
     `;
 
     const response = await openai.chat.completions.create({
@@ -239,9 +258,8 @@ export const getAIValuation = async (req, res, next) => {
 
     let rawContent = response.choices[0].message.content.trim();
     
-    // 💡 تنظيف متقدم لإزالة كتل الـ markdown بأي شكل جاءت به
+    // ✨ Response Parsing التنظيف والتحقق من سلامة البيانات
     rawContent = rawContent.replace(/^```json\s*|```$/g, "").trim();
-
     const valuationData = JSON.parse(rawContent);
 
     res.status(200).json({
