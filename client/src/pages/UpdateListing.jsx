@@ -56,7 +56,13 @@ export default function UpdateListing() {
   useEffect(() => {
     const fetchListing = async () => {
       const listingId = params.listingId;
-      const res = await fetch(`${window.API_BASE_URL}/api/listing/get/${listingId}`);
+      const res = await fetch(
+        `${window.API_BASE_URL}/api/listing/get/${listingId}`,
+        {
+          method: "GET",
+          credentials: "include", // 👈 السطر الموحد لضمان استقرار جلب العقار وتفادي مشاكل الـ CORS أونلاين
+        },
+      );
       const data = await res.json();
       if (data.success === false) {
         console.log(data.message);
@@ -176,11 +182,15 @@ export default function UpdateListing() {
 
       setLoading(true);
       setError(false);
-      const res = await fetch(`${window.API_BASE_URL}/api/listing/update/${params.listingId}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...formData, userRef: currentUser._id }),
-      });
+      const res = await fetch(
+        `${window.API_BASE_URL}/api/listing/update/${params.listingId}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...formData, userRef: currentUser._id }),
+          credentials: "include", // 👈 السطر الجوهري لتمرير الكوكيز والتحقق من صلاحية التعديل أونلاين
+        },
+      );
       const data = await res.json();
       setLoading(false);
       if (data.success === false) {
@@ -204,12 +214,15 @@ export default function UpdateListing() {
       setAiLoading(true);
       setAiError(null);
 
-      const res = await fetch(`${window.API_BASE_URL}/api/listing/generate-ai`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(formData),
-      });
+      const res = await fetch(
+        `${window.API_BASE_URL}/api/listing/generate-ai`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(formData),
+        },
+      );
 
       const data = await res.json();
 
@@ -244,12 +257,15 @@ export default function UpdateListing() {
       setValError(null);
       setValuation(null);
 
-      const res = await fetch(`${window.API_BASE_URL}/api/listing/generate-ai`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(formData),
-      });
+      const res = await fetch(
+        `${window.API_BASE_URL}/api/listing/generate-ai`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(formData),
+        },
+      );
 
       const data = await res.json();
 

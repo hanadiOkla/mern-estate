@@ -68,11 +68,13 @@ function Profile() {
     e.preventDefault();
     try {
       dispatch(updateUserStart());
-        const res = await fetch(`${window.API_BASE_URL}/api/user/update/${currentUser._id}`, {        method: 'POST',
+      const res = await fetch(`${window.API_BASE_URL}/api/user/update/${currentUser._id}`, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),      
+        body: JSON.stringify(formData), 
+        credentials: 'include', // 👈 تم إضافة السطر هنا لتمرير الكوكيز والـ Token أونلاين عند تحديث الحساب
       });
       const data = await res.json();
       if (data.success === false) {
@@ -92,6 +94,7 @@ function Profile() {
       dispatch(deleteUserStart());
       const res = await fetch(`${window.API_BASE_URL}/api/user/delete/${currentUser._id}`, {
         method: 'DELETE',
+        credentials: 'include', // 👈 تم إضافة السطر هنا لتأمين عملية الحذف وتمرير الكوكيز أونلاين
       });
       const data = await res.json();
       if (data.success === false) {
@@ -107,7 +110,10 @@ function Profile() {
   const handleSignOut = async () => {
     try {
       dispatch(signOutUserStart());
-      const res = await fetch(`${window.API_BASE_URL}/api/auth/signout`);
+      const res = await fetch(`${window.API_BASE_URL}/api/auth/signout`, {
+        method: 'GET',
+        credentials: 'include', // 👈 السطر الموحد لضمان إرسال الكوكيز ومسحها بنجاح من المتصفح أونلاين
+      });
       const data = await res.json();
       if (data.success === false) {
         dispatch(signOutUserFailure(data.message));
@@ -122,7 +128,10 @@ function Profile() {
   const handleShowListings = async () => {
     setShowListingsError(false);
     try {
-      const res = await fetch(`${window.API_BASE_URL}/api/user/listings/${currentUser._id}`);
+      const res = await fetch(`${window.API_BASE_URL}/api/user/listings/${currentUser._id}`, {
+        method: 'GET',
+        credentials: 'include', // 👈 السطر الجوهري الذي يحل مشكلة الـ 401 ويجلب العقارات بنجاح أونلاين
+      });
       const data = await res.json();
       if (data.success === false) {
         setShowListingsError(true);
@@ -144,6 +153,7 @@ function Profile() {
     try {
       const res = await fetch(`${window.API_BASE_URL}/api/listing/delete/${listingToDelete}`, {
         method: 'DELETE',
+        credentials: 'include', // 👈 تم إضافة السطر هنا لتمرير الكوكيز والتحقق من المالك أونلاين
       });
       const data = await res.json();
       if (data.success === false) {
