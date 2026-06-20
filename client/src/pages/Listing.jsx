@@ -5,6 +5,9 @@ import { useSelector } from "react-redux";
 import { Navigation } from "swiper/modules";
 import { useTranslation } from "react-i18next"; 
 
+// 1️⃣ استيراد رابط الـ API المركزي والنظيف
+import { API_BASE_URL } from "../config"; 
+
 import "swiper/css";
 
 import {
@@ -41,25 +44,26 @@ export default function Listing() {
 
   useEffect(() => {
     const fetchListing = async () => {
-    try {
-      setLoading(true);
-      const res = await fetch(`${window.API_BASE_URL}/api/listing/get/${params.listingId}`, {
-        method: 'GET',
-        credentials: 'include', // 👈 السطر الموحد لضمان استقرار جلب داتا العقار الحية أونلاين
-      });
-      const data = await res.json();
-      if (data.success === false) {
+      try {
+        setLoading(true);
+        // 2️⃣ استخدام الـ API_BASE_URL المستورد هنا بدلاً من window
+        const res = await fetch(`${API_BASE_URL}/api/listing/get/${params.listingId}`, {
+          method: 'GET',
+          credentials: 'include',
+        });
+        const data = await res.json();
+        if (data.success === false) {
+          setError(true);
+          setLoading(false);
+          return;
+        }
+        setListing(data);
+        setLoading(false);
+        setError(false);
+      } catch (error) {
         setError(true);
         setLoading(false);
-        return;
       }
-      setListing(data);
-      setLoading(false);
-      setError(false);
-    } catch (error) {
-      setError(true);
-      setLoading(false);
-    }
     };
     fetchListing();
   }, [params.listingId]);
@@ -73,11 +77,12 @@ export default function Listing() {
         setValLoading(true);
         setValError(null);
 
-        const res = await fetch(`${window.API_BASE_URL}/api/listing/evaluate-ai`, {
+        // 3️⃣ استخدام الـ API_BASE_URL المستورد هنا أيضاً لطلب الـ AI
+        const res = await fetch(`${API_BASE_URL}/api/listing/evaluate-ai`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(listing),
-          credentials: "include", // 👈 السطر الجوهري لتمرير كوكيز الهوية وتفعيل خوارزمية الـ Rate Limiting بدقة
+          credentials: "include",
         });
 
         const data = await res.json();
@@ -317,7 +322,7 @@ export default function Listing() {
               )}
             </div>
 
-            {/* تفاصيل المواصفات مع دعم الكامل لخاصية الـ Pluralization في ملفاتك */}
+            {/* تفاصيل المواصفات */}
             <ul className="text-slate-700 font-medium text-sm flex flex-wrap items-center gap-4 sm:gap-6 border-t border-b border-slate-100 py-4">
               <li className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-md border border-slate-100">
                 <FaBed className="text-lg text-slate-500" />
