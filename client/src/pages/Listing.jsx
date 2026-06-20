@@ -43,8 +43,7 @@ export default function Listing() {
     const fetchListing = async () => {
       try {
         setLoading(true);
-        const res = await fetch(`/api/listing/get/${params.listingId}`);
-        const data = await res.json();
+const res = await fetch(`${window.API_BASE_URL}/api/listing/get/${params.listingId}`);        const data = await res.json();
         if (data.success === false) {
           setError(true);
           setLoading(false);
@@ -70,7 +69,7 @@ export default function Listing() {
         setValLoading(true);
         setValError(null);
 
-        const res = await fetch("/api/listing/evaluate-ai", {
+        const res = await fetch(`${window.API_BASE_URL}/api/listing/evaluate-ai`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(listing),

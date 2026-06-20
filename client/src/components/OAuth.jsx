@@ -19,7 +19,7 @@ export default function OAuth() {
             const result = await signInWithPopup(auth, provider);
 
             // تذكر إضافة الـ Slash المائل '/' قبل الـ endpoint لتجنب مشاكل الـ Relative Paths
-            const res = await fetch('/api/auth/google', {
+            const res = await fetch(`${window.API_BASE_URL}/api/auth/google`, {
                 method: 'post',
                 headers: {
                     'Content-Type': 'application/json',

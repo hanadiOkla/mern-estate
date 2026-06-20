@@ -3,7 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Sahand Estat</title>
+    <title>ApexReal Estate</title>
+
+    <script>
+      window.API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+        ? 'http://localhost:3000' // 👈 تأكدي من بورت سيرفر الـ Express (غالباً 3000 أو 5000)
+        : 'https://your-backend-url.onrender.com'; // 👈 ضعي رابط الباك إند الحي هنا لاحقاً
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -144,7 +144,7 @@ export default function CreateListing() {
         return setError(t("err_price_validation"));
       setLoading(true);
       setError(false);
-      const res = await fetch("/api/listing/create", {
+      const res = await fetch(`${window.API_BASE_URL}/api/listing/create`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -177,7 +177,7 @@ export default function CreateListing() {
       setAiLoading(true);
       setAiError(null);
 
-      const res = await fetch("/api/listing/generate-ai", {
+      const res = await fetch(`${window.API_BASE_URL}/api/listing/generate-ai`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -220,7 +220,7 @@ export default function CreateListing() {
       setValError(null);
       setValuation(null);
 
-      const res = await fetch("/api/listing/evaluate-ai", {
+      const res = await fetch(`${window.API_BASE_URL}/api/listing/evaluate-ai`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

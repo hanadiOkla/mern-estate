@@ -45,7 +45,7 @@ function Header() {
         {/* 1. اللوجو: يظهر في جميع الشاشات دائماً */}
         <Link to="/" className="shrink-0">
           <h1 className='font-extrabold text-xl sm:text-2xl tracking-tight flex items-center gap-1'>
-            <span className='text-blue-600'>Sahand</span>
+            <span className='text-blue-600'>ApexReal</span>
             <span className='text-slate-800 font-light'>Estate</span>
           </h1>
         </Link>

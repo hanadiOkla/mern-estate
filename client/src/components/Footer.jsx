@@ -25,7 +25,7 @@ function Footer() {
             to="/"
             className="text-2xl font-extrabold text-white tracking-tight"
           >
-            Sahand<span className="text-blue-500">Estate</span>
+            ApexReal<span className="text-blue-500">Estate</span>
           </Link>
           <p className="text-sm text-slate-400 leading-relaxed max-w-sm">
             {t(
@@ -119,7 +119,7 @@ function Footer() {
             </li>
             <li className="flex items-center gap-2.5">
               <FaEnvelope className="text-blue-500 flex-shrink-0" size={14} />
-              <span>support@sahandestate.com</span>
+              <span>support@ApexRealestate.com</span>
             </li>
           </ul>
         </div>
@@ -154,7 +154,7 @@ function Footer() {
           <p>
             {t("footer.copyrights", {
               year: new Date().getFullYear(),
-              defaultValue: `© ${new Date().getFullYear()} Sahand Estate. All rights reserved.`,
+              defaultValue: `© ${new Date().getFullYear()} ApexReal Estate. All rights reserved.`,
             })}
           </p>
           <div className="flex gap-6">

@@ -1,4 +1,4 @@
-// 1. تهيئة dotenv في القمة تماماً قبل استدعاء أي راوترات أو ملفات داخلية لضمان قراءة المفتاح
+// 1. تهيئة dotenv في القمة تماماً لضمان قراءة المفتاح قبل أي شيء
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -6,8 +6,9 @@ dotenv.config();
 import express from 'express';
 import mongoose from 'mongoose';
 import cookieParser from 'cookie-parser';
+import cors from 'cors'; //  استدعاء مكتبة الـ CORS
 
-// 3. استدعاء الـ Routers الخاصة بالمشروع (الآن ستقرأ الـ process.env بأمان وبدون مشاكل)
+// 3. استدعاء الـ Routers الخاصة بالمشروع
 import userRouter from './routes/user.route.js';
 import authRouter from './routes/auth.route.js';
 import listingRouter from './routes/listing.route.js';
@@ -19,12 +20,34 @@ mongoose.connect(process.env.MONGO).then(() => {
     console.log(err);
 });
 
-// 5. تهيئة تطبيق Express والميدل وير الأساسية
+// 5. تهيئة تطبيق Express
 const app = express();
+
+// 💡 تفعيل الـ CORS وإعداد النطاقات المسموحة (اللوكال والموقع الحي أونلاين)
+const allowedOrigins = [
+  'http://localhost:5173',                      // منفذ Vite المحلي أثناء التطوير
+  'https://mern-estate-client-xtpi.onrender.com' // رابط الفرونت إند الحي الخاص بكِ على Render
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    // السماح بالطلبات التي ليس لها origin (مثل أدوات فحص الـ API أو الطلبات المحلية المباشرة)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      return callback(null, true);
+    } else {
+      return callback(new Error('Not allowed by CORS'), false);
+    }
+  },
+  credentials: true // مهم جداً للسماح بتبادل الـ Cookies والـ Tokens أونلاين
+}));
+
+// الميدل وير الأساسية الأخرى
 app.use(express.json());
 app.use(cookieParser());
 
-// 6. تسجيل المسارات (Routes)
+// 6. تسجيل المسارات (Routes) بعد تفعيل الـ CORS والميدل وير
 app.use('/api/user', userRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/listing', listingRouter);

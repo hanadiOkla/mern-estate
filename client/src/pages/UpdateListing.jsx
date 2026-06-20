@@ -56,7 +56,7 @@ export default function UpdateListing() {
   useEffect(() => {
     const fetchListing = async () => {
       const listingId = params.listingId;
-      const res = await fetch(`/api/listing/get/${listingId}`);
+      const res = await fetch(`${window.API_BASE_URL}/api/listing/get/${listingId}`);
       const data = await res.json();
       if (data.success === false) {
         console.log(data.message);
@@ -176,7 +176,7 @@ export default function UpdateListing() {
 
       setLoading(true);
       setError(false);
-      const res = await fetch(`/api/listing/update/${params.listingId}`, {
+      const res = await fetch(`${window.API_BASE_URL}/api/listing/update/${params.listingId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...formData, userRef: currentUser._id }),
@@ -204,7 +204,7 @@ export default function UpdateListing() {
       setAiLoading(true);
       setAiError(null);
 
-      const res = await fetch("/api/listing/generate-ai", {
+      const res = await fetch(`${window.API_BASE_URL}/api/listing/generate-ai`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -244,7 +244,7 @@ export default function UpdateListing() {
       setValError(null);
       setValuation(null);
 
-      const res = await fetch("/api/listing/evaluate-ai", {
+      const res = await fetch(`${window.API_BASE_URL}/api/listing/generate-ai`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
