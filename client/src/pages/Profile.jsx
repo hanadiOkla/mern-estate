@@ -10,7 +10,7 @@ import {
 import { Link } from 'react-router-dom';
 // 1. استيراد خطاف الترجمة من react-i18next
 import { useTranslation } from "react-i18next";
-
+import { API_BASE_URL } from '../config';
 function Profile() {
   const fileRef = useRef(null);
   const { currentUser, loading, error } = useSelector((state) => state.user);
@@ -125,12 +125,13 @@ function Profile() {
     }
   };
 
-  const handleShowListings = async () => {
+const handleShowListings = async () => {
     setShowListingsError(false);
     try {
-      const res = await fetch(`${window.API_BASE_URL}/api/user/listings/${currentUser._id}`, {
+      // 👈 تم التعديل هنا: حذفنا window. واستخدمنا API_BASE_URL المركزية مباشرة
+      const res = await fetch(`${API_BASE_URL}/api/user/listings/${currentUser._id}`, {
         method: 'GET',
-        credentials: 'include', // 👈 السطر الجوهري الذي يحل مشكلة الـ 401 ويجلب العقارات بنجاح أونلاين
+        credentials: 'include', 
       });
       const data = await res.json();
       if (data.success === false) {
