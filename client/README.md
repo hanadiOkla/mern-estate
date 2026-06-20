@@ -1,25 +1,35 @@
-## 🚀 Recent Updates & Advanced AI Features
+# ApexReal Estate - Modern AI-Powered MERN Stack Marketplace
 
-The platform has been empowered with advanced generative AI features leveraging OpenAI's `gpt-4o-mini` model to transform the property listing and pricing experience into an intelligent, seamless workflow. 
+A robust, enterprise-grade real estate marketplace built with the MERN stack, featuring dynamic localization, dynamic production routing, and advanced Generative AI integrations for intelligent property analysis and security optimization.
 
-### 🌟 Core AI Architecture & Enhancements
+## 🚀 Live Demo
+- **Front-End (Production):** `https://mern-estate-client-xtpi.onrender.com/`
+- **Back-End API Endpoint:** `https://mern-estate-api-l4oy.onrender.com`
 
-#### 1. Smart AI Description Generator (`generate-ai`)
-* **How it works:** A custom backend endpoint that processes structured listing data (Title, Address, Type, Amenities) and feeds it to `gpt-4o-mini` using tailored promotional prompts.
-* **Result:** Generates an engaging, professional, and SEO-optimized property description written simultaneously in **Arabic and English**, automatically filling the description area in real-time.
+## ✨ Core Features
 
-#### 2. Advanced AI Property Valuation (`evaluate-ai`)
-* **How it works:** Integrates a financial analysis tool that evaluates market variables based on property type, size, and geographic location trends.
-* **Interactive UI Metrics:** Returns a structured JSON response rendered in an interactive Tailwind dashboard:
-  * **Estimated Price Range:** Dynamically calculates suggested Minimum and Maximum market prices.
-  * **Live Price Tagging:** Compares the user's input price with AI estimates to display a dynamic badge (`Good Deal` | `Fair Price` | `Overpriced`).
-  * **Market Trends & Investment Advice:** Outputs strategic, localized market overviews and advisory points.
+- **🤖 AI-Powered Listing Suite (OpenAI `gpt-4o-mini`):**
+  - **Bilingual SEO Content Generator:** Automatically generates high-converting, SEO-optimized, bilingual (Arabic/English) property descriptions and titles based on raw property attributes.
+  - **Smart Evaluation & Rent/Sale Pricing Guide:** Analyzes real-time property details to suggest the most competitive and optimized market price for landlords and sellers.
+  - **Buyer/Tenant Price Analysis:** Provides instant end-user feedback, explaining transparently whether the listed owner's price is fair, overpriced, or a good deal based on neighborhood benchmarks.
+
+- **🔒 Advanced Security & Rate Limiting:**
+  - **DDoS & Resource Abuse Prevention:** Implemented a strict rate-limiting mechanism on the AI features. If a user refreshes or spams the AI optimization tools more than 5 times within a single hour, the feature automatically suspends for that session to protect API usage and prevent cloud resource drainage.
+  - **Secure Authentication:** Custom JWT-based authentication combined with Google OAuth, secure cookie handling, and robust CRUD operations for listing management.
+
+- **🌍 Dynamic Localization & RTL Support:** Fully customized multi-language interface with automatic browser language detection (Defaulting to English, auto-switching to Arabic with full RTL styling support).
+
+- **🌐 Advanced Search & Filtering:** High-performance filtering mechanism supporting multi-axis queries (pricing, types, offers, amenities) with seamless pagination.
+
+- **🐳 Environment Agnostic Architecture:** Configured with centralized global environment tracking (`window.API_BASE_URL`) to seamlessly switch routing between `localhost` development configurations and Render production servers.
+
+## 🛠️ Tech Stack
+
+- **Frontend:** React.js, Tailwind CSS, Vite, Redux Toolkit
+- **Backend:** Node.js, Express.js, MongoDB, Mongoose, OpenAI API (GPT-4o-mini)
+- **Deployment:** Render (Static Site & Web Service), GitHub
+
+## 🔧 Installation & Local Setup
 
 ---
-
-### 🛡️ Security & Performance Optimization
-
-* **Secure AI Endpoints:** Both AI endpoints are rigorously protected on the backend using custom authentication middleware (`verifyToken`).
-* **Session Cookie Handling:** Integrated state-of-the-art secure request patterns. The Frontend explicitly passes session credentials via `{ credentials: 'include' }` inside asynchronous fetch streams, mitigating any potential `401 Unauthorized` breaches.
-* **Modern Error Handling System:** Eliminated legacy browser `alert()` popups, substituting them with fully responsive, interactive **Inline Error Components** styled with Tailwind CSS, supporting robust validation for missing forms and handling API status errors (such as `429 Quota Exceeded`) gracefully.
-* **Cost-Effective Financial Architecture:** Tailored to consume non-blocking, asynchronous prepaid credits, implementing strict constraints to prevent unauthorized API billing depletion.
+*Developed with ❤️ by Hanadi - Senior Full Stack Engineer.*
