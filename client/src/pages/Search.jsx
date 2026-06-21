@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import ListingItem from '../components/ListingItem';
 // 1. استيراد خطاف الترجمة من react-i18next
 import { useTranslation } from "react-i18next";
+import { API_BASE_URL } from '../config';
 
 export default function Search() {
     const navigate = useNavigate();
@@ -59,7 +60,7 @@ export default function Search() {
             setLoading(true);
             setShowMore(false);
             const searchQuery = urlParams.toString();
-            const res = await fetch(`${window.API_BASE_URL}/api/listing/get?${searchQuery}`, {
+            const res = await fetch(`${API_BASE_URL}/api/listing/get?${searchQuery}`, {
                 method: 'GET',
                 credentials: 'include', // 👈 السطر الموحد لضمان استقرار طلبات البحث والتصفية أونلاين بدون مشاكل CORS
             });
@@ -115,7 +116,7 @@ export default function Search() {
         const urlParams = new URLSearchParams(location.search);
         urlParams.set('startIndex', startIndex);
         const searchQuery = urlParams.toString();
-        const res = await fetch(`${window.API_BASE_URL}/api/listing/get?${searchQuery}`, {
+        const res = await fetch(`${API_BASE_URL}/api/listing/get?${searchQuery}`, {
             method: 'GET',
             credentials: 'include', // 👈 السطر الموحد لضمان استقرار طلبات البحث والتصفية أونلاين بدون مشاكل CORS
         });;

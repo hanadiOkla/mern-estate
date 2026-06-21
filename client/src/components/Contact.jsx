@@ -15,7 +15,7 @@ export default function Contact({ listing }) {
     const fetchLandlord = async () => {
       try {
         const res = await fetch(
-          `${window.API_BASE_URL}/api/user/${listing.userRef}`,
+          `${API_BASE_URL}/api/user/${listing.userRef}`,
           {
             method: "GET", // 👈 تحديد نوع الطلب بشكل صريح
             credentials: "include", // 👈 السطر السحري لتمرير كوكيز الهوية (access_token) أونلاين

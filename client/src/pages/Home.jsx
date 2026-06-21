@@ -11,6 +11,7 @@ import 'swiper/css/navigation';
 import 'swiper/css/effect-fade';
 import ListingItem from '../components/ListingItem';
 import '../index.css';
+import { API_BASE_URL } from '../config';
 
 function Home() {
   const [offerListings, setOfferListings] = useState([]);
@@ -28,7 +29,7 @@ function Home() {
   useEffect(() => {
     const fetchOfferListings = async () => {
       try {
-        const res = await fetch(`${window.API_BASE_URL}/api/listing/get?offer=true&limit=4`, {
+        const res = await fetch(`${API_BASE_URL}/api/listing/get?offer=true&limit=4`, {
           method: 'GET',
           credentials: 'include', // 👈 نمررها كأفضل ممارسة موحدة لجميع طلبات الموقع الحي أونلاين
         });
@@ -42,7 +43,7 @@ function Home() {
 
     const fetchRentListings = async () => {
       try {
-        const res = await fetch(`${window.API_BASE_URL}/api/listing/get?type=rent&limit=4`, {
+        const res = await fetch(`${API_BASE_URL}/api/listing/get?type=rent&limit=4`, {
           method: 'GET',
           credentials: 'include', // 👈 تم إضافة السطر هنا لضمان استقرار الطلب أونلاين
         });
@@ -56,7 +57,7 @@ function Home() {
 
     const fetchSaleListings = async () => {
       try {
-        const res = await fetch(`${window.API_BASE_URL}/api/listing/get?type=sale&limit=4`, {
+        const res = await fetch(`${API_BASE_URL}/api/listing/get?type=sale&limit=4`, {
           method: 'GET',
           credentials: 'include', // 👈 السطر الموحد لضمان استقرار جلسات المستخدم أونلاين
         });

@@ -9,6 +9,7 @@ import {
 import OAuth from "../components/OAuth";
 // 1. استيراد خطاف الترجمة من react-i18next
 import { useTranslation } from "react-i18next";
+import { API_BASE_URL } from '../config';
 
 function SignIn() {
   const [formData, setFormDate] = useState({});
@@ -31,7 +32,7 @@ function SignIn() {
     e.preventDefault();
     try {
       dispatch(signInStart());
-      const res = await fetch(`${window.API_BASE_URL}/api/auth/signin`, {
+      const res = await fetch(`${API_BASE_URL}/api/auth/signin`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -1,6 +1,7 @@
 import React from 'react';
 import { HiOutlineHome, HiOutlineShieldCheck, HiOutlineUserGroup, HiOutlineTrendingUp } from 'react-icons/hi';
 import { useTranslation } from 'react-i18next'; // 1. استيراد المكتبة
+import { API_BASE_URL } from '../config';
 
 export default function About() {
   const { t, i18n } = useTranslation(); // 2. تهيئة الترجمة

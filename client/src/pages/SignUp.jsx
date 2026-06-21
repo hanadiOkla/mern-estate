@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import OAuth from "../components/OAuth";
 // 1. استيراد خطاف الترجمة من react-i18next
 import { useTranslation } from "react-i18next";
+import { API_BASE_URL } from '../config';
 
 function SignUp() {
   const [formData, setFormDate] = useState({});
@@ -25,7 +26,7 @@ function SignUp() {
     e.preventDefault();
     try {
       setLoading(true);
-      const res = await fetch(`${window.API_BASE_URL}/api/auth/signup`, {
+      const res = await fetch(`${API_BASE_URL}/api/auth/signup`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

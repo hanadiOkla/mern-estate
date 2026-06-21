@@ -10,6 +10,7 @@ import { useSelector } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
 // 1. استيراد خطاف الترجمة من react-i18next
 import { useTranslation } from "react-i18next";
+import { API_BASE_URL } from '../config';
 
 export default function UpdateListing() {
   const { currentUser } = useSelector((state) => state.user);
@@ -57,7 +58,7 @@ export default function UpdateListing() {
     const fetchListing = async () => {
       const listingId = params.listingId;
       const res = await fetch(
-        `${window.API_BASE_URL}/api/listing/get/${listingId}`,
+        `${API_BASE_URL}/api/listing/get/${listingId}`,
         {
           method: "GET",
           credentials: "include", // 👈 السطر الموحد لضمان استقرار جلب العقار وتفادي مشاكل الـ CORS أونلاين
@@ -183,7 +184,7 @@ export default function UpdateListing() {
       setLoading(true);
       setError(false);
       const res = await fetch(
-        `${window.API_BASE_URL}/api/listing/update/${params.listingId}`,
+        `${API_BASE_URL}/api/listing/update/${params.listingId}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -215,7 +216,7 @@ export default function UpdateListing() {
       setAiError(null);
 
       const res = await fetch(
-        `${window.API_BASE_URL}/api/listing/generate-ai`,
+        `${API_BASE_URL}/api/listing/generate-ai`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -258,7 +259,7 @@ export default function UpdateListing() {
       setValuation(null);
 
       const res = await fetch(
-        `${window.API_BASE_URL}/api/listing/generate-ai`,
+        `${API_BASE_URL}/api/listing/generate-ai`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

@@ -23,11 +23,15 @@ mongoose.connect(process.env.MONGO).then(() => {
 // 5. تهيئة تطبيق Express
 const app = express();
 
+app.set('trust proxy', 1);
+
+
 // 💡 تفعيل الـ CORS وإعداد النطاقات المسموحة (اللوكال والموقع الحي أونلاين)
 const allowedOrigins = [
   'http://localhost:5173',                      // منفذ Vite المحلي أثناء التطوير
   'https://mern-estate-client-xtpi.onrender.com' // رابط الفرونت إند الحي الخاص بكِ على Render
 ];
+
 
 app.use(cors({
   origin: function (origin, callback) {

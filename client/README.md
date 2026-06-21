@@ -21,7 +21,7 @@ A robust, enterprise-grade real estate marketplace built with the MERN stack, fe
 
 - **🌐 Advanced Search & Filtering:** High-performance filtering mechanism supporting multi-axis queries (pricing, types, offers, amenities) with seamless pagination.
 
-- **🐳 Environment Agnostic Architecture:** Configured with centralized global environment tracking (`window.API_BASE_URL`) to seamlessly switch routing between `localhost` development configurations and Render production servers.
+- **🐳 Environment Agnostic Architecture:** Configured with centralized global environment tracking (`API_BASE_URL`) to seamlessly switch routing between `localhost` development configurations and Render production servers.
 
 ## 🛠️ Tech Stack
 

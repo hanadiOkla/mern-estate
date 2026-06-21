@@ -8,5 +8,6 @@ router.get('/test', test);
 router.post('/update/:id', verifyToken, updateUser); // التعديل هنا: verifyToken كـ middleware
 router.delete('/delete/:id', verifyToken, deleteUser); // التعديل هنا: verifyToken كـ middleware
 router.get('/listings/:id' , verifyToken, getUserListings);
+
 router.get('/:id', verifyToken ,getUser)
 export default router;

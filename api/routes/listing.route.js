@@ -24,4 +24,5 @@ router.get('/get', getListings);
 router.post('/generate-ai', verifyToken, aiLimiter, generateAIDescription);
 router.post('/evaluate-ai', verifyToken, aiLimiter, getAIValuation);
 
+
 export default router;

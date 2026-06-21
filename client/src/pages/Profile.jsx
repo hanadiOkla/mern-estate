@@ -68,7 +68,7 @@ function Profile() {
     e.preventDefault();
     try {
       dispatch(updateUserStart());
-      const res = await fetch(`${window.API_BASE_URL}/api/user/update/${currentUser._id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/user/update/${currentUser._id}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -92,7 +92,7 @@ function Profile() {
   const hanleDeleteUser = async () => {
     try {
       dispatch(deleteUserStart());
-      const res = await fetch(`${window.API_BASE_URL}/api/user/delete/${currentUser._id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/user/delete/${currentUser._id}`, {
         method: 'DELETE',
         credentials: 'include', // 👈 تم إضافة السطر هنا لتأمين عملية الحذف وتمرير الكوكيز أونلاين
       });
@@ -110,7 +110,7 @@ function Profile() {
   const handleSignOut = async () => {
     try {
       dispatch(signOutUserStart());
-      const res = await fetch(`${window.API_BASE_URL}/api/auth/signout`, {
+      const res = await fetch(`${API_BASE_URL}/api/auth/signout`, {
         method: 'GET',
         credentials: 'include', // 👈 السطر الموحد لضمان إرسال الكوكيز ومسحها بنجاح من المتصفح أونلاين
       });
@@ -152,7 +152,7 @@ const handleShowListings = async () => {
   const handleListingDelete = async () => {
     if (!listingToDelete) return;
     try {
-      const res = await fetch(`${window.API_BASE_URL}/api/listing/delete/${listingToDelete}`, {
+      const res = await fetch(`${API_BASE_URL}/api/listing/delete/${listingToDelete}`, {
         method: 'DELETE',
         credentials: 'include', // 👈 تم إضافة السطر هنا لتمرير الكوكيز والتحقق من المالك أونلاين
       });
