@@ -26,7 +26,7 @@ function SignIn() {
     });
   };
 
-  const handleSubmit = async (e) => {
+const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       dispatch(signInStart());
@@ -35,6 +35,7 @@ function SignIn() {
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: 'include', // 👈 أضيفي هذا السطر ليقوم المتصفح بحفظ الكوكي تلقائياً
         body: JSON.stringify(formData),
       });
 
@@ -44,11 +45,9 @@ function SignIn() {
         return;
       }
 
-      // 👈 الخطوة السحرية: حفظ التوكن في الـ LocalStorage لتجنب مشاكل الكوكيز أونلاين
-      if (data.token) {
-        localStorage.setItem('access_token', data.token);
-      }
-
+      // حذفنا حفظ التوكن في localStorage لأنه لم يعد ضرورياً
+      // الكوكي ستُحفظ في المتصفح تلقائياً بفضل credentials: 'include'
+      
       dispatch(signInSuccess(data));
       navigate("/");
     } catch (error) {

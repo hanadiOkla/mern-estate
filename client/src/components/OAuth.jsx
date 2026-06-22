@@ -1,14 +1,13 @@
-import React from "react";
 import { getAuth, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { app } from "../firebase";
 import { useDispatch } from "react-redux";
 import { signInSuccess } from "../redux/user/userSlice";
 import { useNavigate } from "react-router-dom";
-import { useTranslation } from "react-i18next"; // 1. استيراد خطاف الترجمة
+import { useTranslation } from "react-i18next";
 import { API_BASE_URL } from "../config";
 
 export default function OAuth() {
-  const { t, i18n } = useTranslation(); // 2. تفعيل الترجام وإدارة اللغات
+  const { t, i18n } = useTranslation();
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -16,15 +15,12 @@ export default function OAuth() {
     try {
       const provider = new GoogleAuthProvider();
       const auth = getAuth(app);
-
       const result = await signInWithPopup(auth, provider);
 
       const res = await fetch(`${API_BASE_URL}/api/auth/google`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include", // مهم جداً لإرسال واستقبال الكوكي
         body: JSON.stringify({
           name: result.user.displayName,
           email: result.user.email,
@@ -33,11 +29,8 @@ export default function OAuth() {
       });
 
       const data = await res.json();
-
-      if (data.token) {
-        localStorage.setItem("access_token", data.token);
-      }
-
+      
+      // تحديث الـ Redux ببيانات المستخدم القادمة من السيرفر
       dispatch(signInSuccess(data));
       navigate("/");
     } catch (error) {
@@ -49,7 +42,6 @@ export default function OAuth() {
     <button
       onClick={handleGoogleClick}
       type="button"
-      /* 3. تطبيق uppercase ديناميكياً بناءً على اللغة لضمان مظهر متناسق */
       className={`bg-red-700 text-white p-3 rounded-lg hover:opacity-95 transition-opacity ${
         i18n.language === "en" ? "uppercase" : ""
       }`}
