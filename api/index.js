@@ -19,8 +19,11 @@ const app = express();
 
 // إعداد CORS بسيط وشامل
 app.use(cors({
-  origin: true, // يسمح بـ 'true' أي مصدر للطلب (Local أو Server)
-  credentials: true, // ضروري لنقل الكوكيز والـ Tokens
+  origin: [
+    'https://mern-estate-client-xtpi.onrender.com', // رابط الفرونت إند الخاص بكِ على Render
+    'http://localhost:5173' // للسماح بالتطوير المحلي
+  ],
+  credentials: true, // مهم جداً لجلسات تسجيل الدخول
 }));
 
 app.use(express.json());
