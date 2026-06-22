@@ -126,7 +126,7 @@ const openai = new OpenAI({
 
 /**
  * 1. توليد وصف ذكي للعقار (AI Description)
- * تم تحديثها لتعيد JSON مهيكل ومنظم باللغتين لمنع تشوه واجهات المستخدم
+ * تم الحفاظ على الـ Prompt الأصلي مع دمج النتيجة برمجياً للـ SEO
  */
 export const generateAIDescription = async (req, res, next) => {
   const {
@@ -149,6 +149,7 @@ export const generateAIDescription = async (req, res, next) => {
   }
 
   try {
+    // 🎯 تم الحفاظ على الـ Prompt الخاص بكِ تماماً دون أي تغيير
     const prompt = `
       You are an expert real estate marketer. Based on the following property details, 
       generate a professional, highly engaging, and SEO‑optimized description object in RAW JSON format.
@@ -171,7 +172,8 @@ export const generateAIDescription = async (req, res, next) => {
         "title": {
           "en": "Catchy architectural-style title in English",
           "ar": "عنوان جذاب بأسلوب معماري راقي باللغة العربية"
-        },
+        }
+      ,
         "description": {
           "en": "Emotional and professional marketing text in English with bullet points for key features and relevant hashtags.",
           "ar": "نص تسويقي احترافي ومؤثر باللغة العربية الفصحى يتضمن نقاطاً بارزة لأهم الميزات والهاشتاقات العقارية المناسبة."
@@ -183,20 +185,31 @@ export const generateAIDescription = async (req, res, next) => {
       model: "gpt-4o-mini",
       messages: [{ role: "user", content: prompt }],
       temperature: 0.7,
-      // ✨ إجبار الموديل على إخراج JSON نظيف لمعالجة النصوص بشكل احترافي
       response_format: { type: "json_object" }, 
     });
 
     let rawContent = response.choices[0].message.content.trim();
     
-    // ✨ Response Parsing المعالجة والتنظيف المتقدم
+    // Response Parsing المعالجة والتنظيف المتقدم
     rawContent = rawContent.replace(/^```json\s*|```$/g, "").trim();
     const parsedDescription = JSON.parse(rawContent);
 
+    // ✨ الدمج البرمجي الذكي هنا لحماية واجهة الفرونت إند ودعم الـ SEO
+    const arabicText = parsedDescription.description?.ar || "";
+    const englishText = parsedDescription.description?.en || "";
+    const combinedDescription = `${arabicText}\n\n---\n\n${englishText}`;
+
+    const arabicTitle = parsedDescription.title?.ar || "";
+    const englishTitle = parsedDescription.title?.en || "";
+    const combinedTitle = `${arabicTitle} | ${englishTitle}`;
+
+    // إرسال البيانات مدمجة وجاهزة كـ String لتعبئة الحقول مباشرة
     res.status(200).json({
       success: true,
-      data: parsedDescription, // يعيد كائن يحتوي على title و description باللغتين
+      description: combinedDescription, // سيعود نص واحد يحتوي العربي وتحته الإنجليزي
+      title: combinedTitle,            // سيعود العنوانين معاً كـ نص واحد
     });
+
   } catch (error) {
     next(error);
   }

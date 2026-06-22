@@ -19,20 +19,25 @@ export default function OAuth() {
 
       const result = await signInWithPopup(auth, provider);
 
-      // تذكر إضافة الـ Slash المائل '/' قبل الـ endpoint لتجنب مشاكل الـ Relative Paths
       const res = await fetch(`${API_BASE_URL}/api/auth/google`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        credentials: "include", // 👈 أهم سطر
+        credentials: "include",
         body: JSON.stringify({
           name: result.user.displayName,
           email: result.user.email,
           photo: result.user.photoURL,
         }),
       });
+
       const data = await res.json();
+
+      if (data.token) {
+        localStorage.setItem("access_token", data.token);
+      }
+
       dispatch(signInSuccess(data));
       navigate("/");
     } catch (error) {

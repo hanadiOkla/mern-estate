@@ -9,8 +9,16 @@ import authRouter from './routes/auth.route.js';
 import userRouter from './routes/user.route.js';
 import listingRouter from './routes/listing.route.js';
 
-dotenv.config();
-
+import path from 'path';
+dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+mongoose
+  .connect(process.env.MONGO)
+  .then(() => {
+    console.log('Connected to MongoDB successfully! 🎉');
+  })
+  .catch((err) => {
+    console.error('Database connection error ❌:', err.message);
+  });
 const app = express();
 
 // 1. إعداد الـ CORS الرئيسي (يجب أن يكون أول ميدل وير بعد تعريف app)
@@ -68,6 +76,6 @@ app.use((err, req, res, next) => {
 
 // تشغيل السيرفر على البورت المحدد من Render أو 3000
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}!`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server is running on port ${PORT} and listening globally!`);
 });
