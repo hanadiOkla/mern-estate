@@ -5,10 +5,8 @@ import { errorHandler } from '../utils/error.js';
 
 const cookieOptions = {
   httpOnly: true,
-  // في الإنتاج، يجب أن تكون true. إذا واجهتِ مشكلة في اللوكال، استخدمي الشرط التالي:
-  secure: process.env.NODE_ENV === 'production', 
-  // هذه هي الإعدادات التي تضمن عمل الكوكيز عبر النطاقات المختلفة:
-  sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+  secure: true,        // يجب أن تكون true لأن Render يستخدم HTTPS
+  sameSite: 'none',    // ضروري جداً لأن الفرونت إند والسيرفر في دومينات مختلفة
 };
 
 export const signup = async (req, res, next) => {
