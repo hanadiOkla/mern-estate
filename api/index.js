@@ -3,14 +3,16 @@ import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
+import path from 'path';
 
 // استيراد المسارات الخاصة بكِ
 import authRouter from './routes/auth.route.js';
 import userRouter from './routes/user.route.js';
 import listingRouter from './routes/listing.route.js';
 
-import path from 'path';
-dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+// تهيئة متغيرات البيئة بشكل مباشر
+dotenv.config();
+
 mongoose
   .connect(process.env.MONGO)
   .then(() => {
@@ -19,41 +21,31 @@ mongoose
   .catch((err) => {
     console.error('Database connection error ❌:', err.message);
   });
+
 const app = express();
 
-// 1. إعداد الـ CORS الرئيسي (يجب أن يكون أول ميدل وير بعد تعريف app)
+// إعداد الـ CORS بشكل احترافي وموحد (يغنيكِ عن الميدل وير اليدوي)
+const allowedOrigins = [
+  'https://mern-estate-client-xtpi.onrender.com',
+  'http://localhost:5173'
+];
+
 app.use(cors({
-  origin: [
-    'https://mern-estate-client-xtpi.onrender.com', // رابط الفرونت إند على Render
-    'http://localhost:5173'                         // لرابط التطوير المحلي لديكِ
-  ],
+  origin: function (origin, callback) {
+    // السماح بالطلبات التي لا تحتوي على origin (مثل Postman أو السيرفرات الداخلية)
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept']
 }));
 
-// 2. ميدل وير إضافي مخصص لحل دراما الـ Preflight (OPTIONS) بنسبة 100%
-app.use((req, res, next) => {
-  const allowedOrigins = [
-    'https://mern-estate-client-xtpi.onrender.com',
-    'http://localhost:5173'
-  ];
-  const origin = req.headers.origin;
-  
-  if (allowedOrigins.includes(origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-  }
-  
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept');
-
-  // إذا كان الطلب من نوع OPTIONS، نرد عليه فوراً بـ 200 بدون أن نتركه يمر للمسارات
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
-  }
-  next();
-});
+// إعداد الـ Preflight (OPTIONS) للتعامل مع المتصفحات
+app.options('*', cors());
 
 app.use(express.json());
 app.use(cookieParser());
@@ -74,7 +66,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-// تشغيل السيرفر على البورت المحدد من Render أو 3000
+// تشغيل السيرفر
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server is running on port ${PORT} and listening globally!`);
