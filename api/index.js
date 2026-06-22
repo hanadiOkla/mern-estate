@@ -17,23 +17,28 @@ mongoose
 
 const app = express();
 
-// إعداد CORS بسيط وشامل
+// 👇 مهم جداً على Render
+app.set("trust proxy", 1);
+
+// إعداد CORS الصحيح
 app.use(cors({
   origin: [
-    'https://mern-estate-client-xtpi.onrender.com', // رابط الفرونت إند الخاص بكِ على Render
-    'http://localhost:5173' // للسماح بالتطوير المحلي
+    'https://mern-estate-client-xtpi.onrender.com',
+    'http://localhost:5173'
   ],
-  credentials: true, // مهم جداً لجلسات تسجيل الدخول
+  credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
 app.use(express.json());
 app.use(cookieParser());
 
-// المسارات (Routes)
+// المسارات
 app.use('/api/auth', authRouter);
 app.use('/api/user', userRouter);
 app.use('/api/listing', listingRouter);
 
+// Global Error Handler
 app.use((err, req, res, next) => {
   const statusCode = err.statusCode || 500;
   const message = err.message || 'Internal Server Error';
