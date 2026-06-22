@@ -5,8 +5,10 @@ import { errorHandler } from '../utils/error.js';
 
 const cookieOptions = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === 'production', // true في الريندر، false في اللوكال
-  sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', 
+  // في الإنتاج، يجب أن تكون true. إذا واجهتِ مشكلة في اللوكال، استخدمي الشرط التالي:
+  secure: process.env.NODE_ENV === 'production', 
+  // هذه هي الإعدادات التي تضمن عمل الكوكيز عبر النطاقات المختلفة:
+  sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
 };
 
 export const signup = async (req, res, next) => {
