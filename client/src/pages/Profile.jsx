@@ -8,9 +8,9 @@ import {
   signOutUserFailure, signOutUserStart, signOutUserSuccess 
 } from '../redux/user/userSlice'; 
 import { Link } from 'react-router-dom';
-// 1. استيراد خطاف الترجمة من react-i18next
 import { useTranslation } from "react-i18next";
 import { API_BASE_URL } from '../config';
+
 function Profile() {
   const fileRef = useRef(null);
   const { currentUser, loading, error } = useSelector((state) => state.user);
@@ -27,8 +27,6 @@ function Profile() {
   const [listingToDelete, setListingToDelete] = useState(null);
 
   const dispatch = useDispatch();
-
-  // 2. تفعيل دالة الترجمة t ومعرفة الاتجاه الحالي (rtl أو ltr)
   const { t, i18n } = useTranslation();
   const isRtl = i18n.dir() === 'rtl';
 
@@ -68,13 +66,15 @@ function Profile() {
     e.preventDefault();
     try {
       dispatch(updateUserStart());
+      const token = localStorage.getItem('access_token'); // 👈 جلب التوكن
+      
       const res = await fetch(`${API_BASE_URL}/api/user/update/${currentUser._id}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` // 👈 تمرير التوكن في الهيدر
         },
         body: JSON.stringify(formData), 
-        credentials: 'include', // 👈 تم إضافة السطر هنا لتمرير الكوكيز والـ Token أونلاين عند تحديث الحساب
       });
       const data = await res.json();
       if (data.success === false) {
@@ -92,15 +92,20 @@ function Profile() {
   const hanleDeleteUser = async () => {
     try {
       dispatch(deleteUserStart());
+      const token = localStorage.getItem('access_token'); // 👈 جلب التوكن
+      
       const res = await fetch(`${API_BASE_URL}/api/user/delete/${currentUser._id}`, {
         method: 'DELETE',
-        credentials: 'include', // 👈 تم إضافة السطر هنا لتأمين عملية الحذف وتمرير الكوكيز أونلاين
+        headers: {
+          'Authorization': `Bearer ${token}` // 👈 تمرير التوكن في الهيدر
+        }
       });
       const data = await res.json();
       if (data.success === false) {
         dispatch(deleteUserFailure(data.message));
         return;
       }
+      localStorage.removeItem('access_token'); // 👈 مسح التوكن عند حذف الحساب
       dispatch(deleteUserSuccess(data));
     } catch (error) {
       dispatch(deleteUserFailure(error.message));
@@ -112,26 +117,30 @@ function Profile() {
       dispatch(signOutUserStart());
       const res = await fetch(`${API_BASE_URL}/api/auth/signout`, {
         method: 'GET',
-        credentials: 'include', // 👈 السطر الموحد لضمان إرسال الكوكيز ومسحها بنجاح من المتصفح أونلاين
       });
       const data = await res.json();
       if (data.success === false) {
         dispatch(signOutUserFailure(data.message));
         return;
       }
+      localStorage.removeItem('access_token'); // 👈 مسح التوكن من المتصفح عند تسجيل الخروج
       dispatch(signOutUserSuccess(data));
     } catch (error) {
       dispatch(signOutUserFailure(error.message));
     }
   };
 
-const handleShowListings = async () => {
+  const handleShowListings = async () => {
     setShowListingsError(false);
     try {
-      // 👈 تم التعديل هنا: حذفنا window. واستخدمنا API_BASE_URL المركزية مباشرة
+      const token = localStorage.getItem('access_token'); // 👈 جلب التوكن
+      
       const res = await fetch(`${API_BASE_URL}/api/user/listings/${currentUser._id}`, {
         method: 'GET',
-        credentials: 'include', 
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` // 👈 تمرير التوكن في الهيدر
+        },
       });
       const data = await res.json();
       if (data.success === false) {
@@ -152,9 +161,13 @@ const handleShowListings = async () => {
   const handleListingDelete = async () => {
     if (!listingToDelete) return;
     try {
+      const token = localStorage.getItem('access_token'); // 👈 جلب التوكن
+      
       const res = await fetch(`${API_BASE_URL}/api/listing/delete/${listingToDelete}`, {
         method: 'DELETE',
-        credentials: 'include', // 👈 تم إضافة السطر هنا لتمرير الكوكيز والتحقق من المالك أونلاين
+        headers: {
+          'Authorization': `Bearer ${token}` // 👈 تمرير التوكن في الهيدر
+        }
       });
       const data = await res.json();
       if (data.success === false) {
@@ -177,7 +190,6 @@ const handleShowListings = async () => {
     <div className='bg-slate-50/50 min-h-screen py-12 px-4 md:px-8 relative'>
       <div className='max-w-6xl mx-auto flex flex-col gap-8'>
         
-        {/* العناوين مجهزة للـ RTL تلقائياً عبر المتصفح، ولكن أضفنا تلميحات محاذاة مرنة إن لزم الأمر */}
         <div className={isRtl ? 'text-right' : 'text-left'}>
           <h1 className='text-3xl font-extrabold text-slate-900 tracking-tight'>{t('profile.title')}</h1>
           <p className='text-sm text-slate-400 mt-1'>{t('profile.subtitle')}</p>
@@ -285,7 +297,6 @@ const handleShowListings = async () => {
 
             {error && <div className='bg-red-50 border border-red-100 text-red-600 px-4 py-2.5 rounded-xl text-xs font-medium text-center mt-2'>{error}</div>}
             {updateSuccess && <div className='bg-emerald-50 border border-emerald-100 text-emerald-600 px-4 py-2.5 rounded-xl text-xs font-medium text-center mt-2'>{t('profile.update_success_msg')}</div>}
-            
             {deleteSuccess && <div className='bg-rose-50 border border-rose-100 text-rose-600 px-4 py-2.5 rounded-xl text-xs font-medium text-center mt-2'>{t('profile.delete_listing_success')}</div>}
           </div>
 

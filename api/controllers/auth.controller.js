@@ -36,9 +36,10 @@ export const signin = async (req, res, next) => {
     const token = jwt.sign({ id: validUser._id }, process.env.JWT_SECRET);
     const { password: pass, ...rest } = validUser._doc;
 
+    // 👈 نرسل الكوكي كاحتياطي، ونرسل التوكن داخل الـ JSON ليعتمده الفرونت إند
     res.cookie('access_token', token, cookieOptions)
        .status(200)
-       .json(rest);
+       .json({ ...rest, token }); 
 
   } catch (error) {
     next(error);
@@ -55,7 +56,7 @@ export const google = async (req, res, next) => {
 
       res.cookie('access_token', token, cookieOptions)
          .status(200)
-         .json(rest);
+         .json({ ...rest, token });
 
     } else {
       const generatedPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
@@ -74,7 +75,7 @@ export const google = async (req, res, next) => {
 
       res.cookie('access_token', token, cookieOptions)
          .status(200)
-         .json(rest);
+         .json({ ...rest, token });
     }
 
   } catch (error) {
