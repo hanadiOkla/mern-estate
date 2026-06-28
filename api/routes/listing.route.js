@@ -1,6 +1,6 @@
 import express from "express"; // Fixed typo from exporess to express
 import { 
-  creatListing, 
+  createListing, 
   deleteListing, 
   updateListing, 
   getListing, 
@@ -14,7 +14,7 @@ import { aiLimiter } from "../utils/rateLimiter.js"; // ✨ استيراد مح�
 const router = express.Router();
 
 // Core CRUD Operations
-router.post('/create', verifyToken, creatListing);
+router.post('/create', verifyToken, createListing);
 router.delete('/delete/:id', verifyToken, deleteListing);
 router.post('/update/:id', verifyToken, updateListing);
 router.get('/get/:id', getListing);

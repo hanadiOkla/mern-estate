@@ -2,9 +2,41 @@ import Listing from "../models/listing.model.js";
 import { errorHandler } from "../utils/error.js";
 import OpenAI from "openai";
 import dotenv from "dotenv";
+
 dotenv.config();
 
-export const creatListing = async (req, res, next) => {
+// Initialize OpenAI client
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+// --- Helper Functions --- 
+
+/**
+ *  Helper function to safely clean and parse OpenAI response into a JSON object
+ */
+const parseAIJsonResponse = (rawContent) => {
+  const cleaned = rawContent.replace(/^```json\s*|```$/g, "").trim();
+  return JSON.parse(cleaned);
+};
+
+
+/**
+ * Helper function to call GPT model and reduce code repetition
+ */
+const requestAIChatCompletion = async (prompt, temperature = 0.5) => {
+  const response = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages: [{ role: "user", content: prompt }],
+    temperature,
+    response_format: { type: "json_object" },
+  });
+  return parseAIJsonResponse(response.choices[0].message.content);
+};
+
+
+// --- Core Listing Controllers ---
+export const createListing = async (req, res, next) => {
   try {
     const listing = await Listing.create(req.body);
     return res.status(201).json(listing);
@@ -14,36 +46,29 @@ export const creatListing = async (req, res, next) => {
 };
 
 export const deleteListing = async (req, res, next) => {
-  const listing = await Listing.findById(req.params.id);
-
-  if (!listing) {
-    return next(errorHandler(404, "Listing not found!"));
-  }
-
-  if (req.user.id !== listing.userRef) {
-    return next(errorHandler(401, "You can only delete your own listings!"));
-  }
-
   try {
-    await Listing.findByIdAndDelete(req.params.id);
-    res.status(200).json("Listing has been Delete!");
+    const listing = await Listing.findById(req.params.id);
+
+    if (!listing) return next(errorHandler(404, "Listing not found!"));
+    if (req.user.id !== listing.userRef) {
+      return next(errorHandler(401, "You can only delete your own listings!"));
+    }
+
+    await listing.deleteOne(); 
+    res.status(200).json("Listing has been deleted!");
   } catch (error) {
     next(error);
   }
 };
 
 export const updateListing = async (req, res, next) => {
-  const listing = await Listing.findById(req.params.id);
-
-  if (!listing) {
-    return next(errorHandler(404, "Listing not found!"));
-  }
-
-  if (req.user.id !== listing.userRef) {
-    return next(errorHandler(401, "You can only update your own listings!"));
-  }
-
   try {
+    const listing = await Listing.findById(req.params.id);
+
+    if (!listing) return next(errorHandler(404, "Listing not found!"));
+    if (req.user.id !== listing.userRef) {
+      return next(errorHandler(401, "You can only update your own listings!"));
+    }
     const updateListing = await Listing.findByIdAndUpdate(
       req.params.id,
       req.body,
@@ -58,9 +83,8 @@ export const updateListing = async (req, res, next) => {
 export const getListing = async (req, res, next) => {
   try {
     const listing = await Listing.findById(req.params.id);
-    if (!listing) {
-      return next(errorHandler(404, "Listing not found!"));
-    }
+    if (!listing) return next(errorHandler(404, "Listing not found!"));
+
     res.status(200).json(listing);
   } catch (error) {
     next(error);
@@ -68,34 +92,17 @@ export const getListing = async (req, res, next) => {
 };
 
 export const getListings = async (req, res, next) => {
-  try {
+try {
     const limit = parseInt(req.query.limit) || 9;
     const startIndex = parseInt(req.query.startIndex) || 0;
 
-    let offer = req.query.offer;
-    if (offer === undefined || offer === "false") {
-      offer = { $in: [false, true] };
-    }
-
-    let furnished = req.query.furnished;
-    if (furnished === undefined || furnished === "false") {
-      furnished = { $in: [false, true] };
-    }
-
-    let parking = req.query.parking;
-    if (parking === undefined || parking === "false") {
-      parking = { $in: [false, true] };
-    }
-
-    let type = req.query.type;
-    if (type === undefined || type === "all") {
-      type = { $in: ["sale", "rent"] };
-    }
+    const offer = req.query.offer === undefined || req.query.offer === "false" ? { $in: [false, true] } : req.query.offer;
+    const furnished = req.query.furnished === undefined || req.query.furnished === "false" ? { $in: [false, true] } : req.query.furnished;
+    const parking = req.query.parking === undefined || req.query.parking === "false" ? { $in: [false, true] } : req.query.parking;
+    const type = req.query.type === undefined || req.query.type === "all" ? { $in: ["sale", "rent"] } : req.query.type;
 
     const searchTerm = req.query.searchTerm || "";
-
     const sort = req.query.sort || "createdAt";
-
     const order = req.query.order || "desc";
 
     const listings = await Listing.find({
@@ -105,29 +112,22 @@ export const getListings = async (req, res, next) => {
       parking,
       type,
     })
-      .sort({
-        [sort]: order,
-      })
+      .sort({ [sort]: order })
       .limit(limit)
       .skip(startIndex);
 
     return res.status(200).json(listings);
-  } catch (error) {
+  }catch (error) {
     next(error);
   }
 };
 
 
 
-// تهيئة مكتبة OpenAI (ستقرأ المفتاح تلقائياً من ملف .env الموجود في الجذر)
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
 
-/**
- * 1. توليد وصف ذكي للعقار (AI Description)
- * تم الحفاظ على الـ Prompt الأصلي مع دمج النتيجة برمجياً للـ SEO
- */
+
+// --- AI Features Controllers ---
+
 export const generateAIDescription = async (req, res, next) => {
   const {
     name,
@@ -149,7 +149,6 @@ export const generateAIDescription = async (req, res, next) => {
   }
 
   try {
-    // 🎯 تم الحفاظ على الـ Prompt الخاص بكِ تماماً دون أي تغيير
     const prompt = `
       You are an expert real estate marketer. Based on the following property details, 
       generate a professional, highly engaging, and SEO‑optimized description object in RAW JSON format.
@@ -181,20 +180,8 @@ export const generateAIDescription = async (req, res, next) => {
       }
     `;
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [{ role: "user", content: prompt }],
-      temperature: 0.7,
-      response_format: { type: "json_object" }, 
-    });
+    const parsedDescription = await requestAIChatCompletion(prompt, 0.7);
 
-    let rawContent = response.choices[0].message.content.trim();
-    
-    // Response Parsing المعالجة والتنظيف المتقدم
-    rawContent = rawContent.replace(/^```json\s*|```$/g, "").trim();
-    const parsedDescription = JSON.parse(rawContent);
-
-    // ✨ الدمج البرمجي الذكي هنا لحماية واجهة الفرونت إند ودعم الـ SEO
     const arabicText = parsedDescription.description?.ar || "";
     const englishText = parsedDescription.description?.en || "";
     const combinedDescription = `${arabicText}\n\n---\n\n${englishText}`;
@@ -203,7 +190,6 @@ export const generateAIDescription = async (req, res, next) => {
     const englishTitle = parsedDescription.title?.en || "";
     const combinedTitle = `${arabicTitle} | ${englishTitle}`;
 
-    // إرسال البيانات مدمجة وجاهزة كـ String لتعبئة الحقول مباشرة
     res.status(200).json({
       success: true,
       description: combinedDescription, // سيعود نص واحد يحتوي العربي وتحته الإنجليزي
@@ -215,10 +201,7 @@ export const generateAIDescription = async (req, res, next) => {
   }
 };
 
-/**
- * 2. التقييم المالي الذكي للعقار (AI Valuation)
- * مجهزة ومنظفة بالكامل للاستخدام الآمن في الإنتاج الفعلي
- */
+
 export const getAIValuation = async (req, res, next) => {
   const { name, type, address, bedrooms, bathrooms, furnished, parking, regularPrice } = req.body;
 
@@ -262,18 +245,7 @@ export const getAIValuation = async (req, res, next) => {
       }
     `;
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [{ role: "user", content: prompt }],
-      temperature: 0.3,
-      response_format: { type: "json_object" },
-    });
-
-    let rawContent = response.choices[0].message.content.trim();
-    
-    // ✨ Response Parsing التنظيف والتحقق من سلامة البيانات
-    rawContent = rawContent.replace(/^```json\s*|```$/g, "").trim();
-    const valuationData = JSON.parse(rawContent);
+    const valuationData = await requestAIChatCompletion(prompt, 0.3);
 
     res.status(200).json({
       success: true,
