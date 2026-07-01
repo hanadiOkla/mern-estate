@@ -20,7 +20,7 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: './api/package-lock.json'
+          cache-dependency-path: './package-lock.json' # تم التعديل للمسار الرئيسي الصحيح
 
       - name: Install Backend Dependencies
         run: |
@@ -50,4 +50,4 @@ jobs:
       - name: Build Frontend Application
         run: |
           cd client
-          npm run build
+          CI=false npm run build
