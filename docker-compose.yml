@@ -1,13 +1,15 @@
 version: '3.8'
 
 services:
-  # 1. خدمة الباك إند (Express.js)
+  # 1. خدمة الباك إند
   backend:
     build:
-      context: ./api
-      dockerfile: Dockerfile
+      context: .                   # <--- مهم جداً: نقطة ليرى جذر المشروع بالكامل
+      dockerfile: ./api/Dockerfile # <--- مسار الـ Dockerfile
     ports:
       - "3000:3000"
+    env_file:         # <--- أضيفي هذا السطر ليقوم دكر بسحب المتغيرات من ملف .env تلقائياً
+      - .env  
     environment:
       - NODE_ENV=production
       - MONGO_URI=${MONGO}
@@ -15,11 +17,13 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
     restart: always
 
-  # 2. خدمة الفرونت إند (React + Vite + Nginx)
+  # 2. خدمة الفرونت إند
   frontend:
     build:
-      context: ./client
+      context: ./client            # <--- يبقى كما هو للمجلد الفرعي ليقرأ nginx.conf الخاص به بسهولة
       dockerfile: Dockerfile
+      args:
+        - VITE_FIREBASE_API_KEY=${VITE_FIREBASE_API_KEY}
     ports:
       - "80:80"
     restart: always

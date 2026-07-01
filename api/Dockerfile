@@ -1,12 +1,12 @@
-# api/Dockerfile
 FROM node:20-alpine
 WORKDIR /app
 
-# تأكدي أن الأسطر مكتوبة هكذا مباشرة (بدون كلمة api/ قبل اسم الملف)
-COPY package*.json ./  
-RUN npm install --production
+# نسخ ملفات الـ package من جذر المشروع (الخارج)
+COPY package*.json ./
+RUN npm install --only=production
 
-COPY . .
+# نسخ محتويات مجلد الـ api بالكامل إلى الـ WORKDIR
+COPY ./api .
 
 ENV PORT=3000
 EXPOSE 3000
