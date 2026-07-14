@@ -259,7 +259,7 @@ export default function UpdateListing() {
       setValuation(null);
 
       const res = await fetch(
-        `${API_BASE_URL}/api/listing/generate-ai`,
+        `${API_BASE_URL}/api/listing/evaluate-ai`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
