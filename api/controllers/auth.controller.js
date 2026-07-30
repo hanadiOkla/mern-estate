@@ -9,9 +9,14 @@ const cookieOptions = {
   sameSite: 'none',    // Crucial for cross-domain frontend/backend
 };
 
-// Function to prevent repetition
+// 💡 تم تحديث الدالة لتضمين الـ role داخل الـ Token
 const sendTokenResponse = (user, statusCode, res) => {
-  const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
+  const token = jwt.sign(
+    { id: user._id, role: user.role }, // 👈 أضفنا role هنا
+    process.env.JWT_SECRET, 
+    { expiresIn: '1d' }
+  );
+  
   const { password, ...rest } = user._doc;
 
   res.cookie('access_token', token, cookieOptions)
@@ -24,7 +29,6 @@ const sendTokenResponse = (user, statusCode, res) => {
 export const signup = async (req, res, next) => {
   const { username, email, password } = req.body;
   try {
-    // تصحيح 1: إضافة await واستخدام الدالة غير المتزامنة
     const hashPassword = await bcrypt.hash(password, 10); 
     const newUser = new User({ username, email, password: hashPassword });
     
@@ -41,7 +45,6 @@ export const signin = async (req, res, next) => {
     const validUser = await User.findOne({ email });
     if (!validUser) return next(errorHandler(404, 'User not found!'));
 
-    // تصحيح 2: تغيير user.password إلى validUser.password وإضافة await
     const isMatch = await bcrypt.compare(password, validUser.password);
     if (!isMatch) return next(errorHandler(401, 'Wrong credentials!'));
     

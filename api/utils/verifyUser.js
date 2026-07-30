@@ -21,3 +21,15 @@ export const verifyToken = (req, res, next) => {
         next();
     });
 };
+
+export const verifyAdmin = (req, res, next) => {
+    if (!req.user) {
+        return next(errorHandler(401, 'Unauthorized: Please log in first'));
+    }
+
+    if (req.user.role !== 'admin') {
+        return next(errorHandler(403, 'Forbidden: Admin access required'));
+    }
+
+    next();
+};

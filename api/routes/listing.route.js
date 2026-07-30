@@ -6,21 +6,30 @@ import {
   getListing, 
   getListings,
   generateAIDescription,
-  getAIValuation 
+  getAIValuation ,
+  approveListing, 
+  getPendingListings
 } from "../controllers/listing.controller.js";
-import { verifyToken } from "../utils/verifyUser.js";
-import { aiLimiter } from "../utils/rateLimiter.js"; // ✨ استيراد محدد الاستهلاك الذكي
+import { verifyToken, verifyAdmin } from "../utils/verifyUser.js";
+import { aiLimiter } from "../utils/rateLimiter.js"; 
 
 const router = express.Router();
+
+
 
 // Core CRUD Operations
 router.post('/create', verifyToken, createListing);
 router.delete('/delete/:id', verifyToken, deleteListing);
 router.post('/update/:id', verifyToken, updateListing);
+
+// Admin-Only Dashboard Operations 
+router.get('/pending', verifyToken, verifyAdmin, getPendingListings); 
+router.put('/approve/:id', verifyToken, verifyAdmin, approveListing); 
+// Public Operations
 router.get('/get/:id', getListing);
 router.get('/get', getListings);
 
-// AI Features (✨ محمية بالـ Token والـ Rate Limiter معاً لضمان أمان مالي وهندسي)
+// AI Features
 router.post('/generate-ai', verifyToken, aiLimiter, generateAIDescription);
 router.post('/evaluate-ai', verifyToken, aiLimiter, getAIValuation);
 

@@ -2,6 +2,7 @@ import Listing from "../models/listing.model.js";
 import { errorHandler } from "../utils/error.js";
 import OpenAI from "openai";
 import dotenv from "dotenv";
+import User from '../models/user.model.js';
 
 dotenv.config();
 
@@ -145,13 +146,15 @@ export const getUser = async (req, res, next) => {
 };
 // 1. دالة تحديث بيانات المستخدم
 export const updateUser = async (req, res, next) => {
-  if (req.user.id !== req.params.id) {
+  // تأكدي أن كلمة User مستوردة فوق
+  if (req.user.id !== req.params.id) 
     return next(errorHandler(401, 'You can only update your own account!'));
-  }
+  
   try {
     if (req.body.password) {
       req.body.password = bcryptjs.hashSync(req.body.password, 10);
     }
+
     const updatedUser = await User.findByIdAndUpdate(
       req.params.id,
       {
@@ -164,6 +167,7 @@ export const updateUser = async (req, res, next) => {
       },
       { new: true }
     );
+
     const { password, ...rest } = updatedUser._doc;
     res.status(200).json(rest);
   } catch (error) {
@@ -171,17 +175,20 @@ export const updateUser = async (req, res, next) => {
   }
 };
 
-// 2. دالة جلب العقارات الخاصة بالمستخدم (وهي المسببة للخطأ الحالي)
+// جلب كافة إعلانات المستخدم (المقبولة، المعلقة، والمرفوضة) ليعرضها في بروفايله
 export const getUserListings = async (req, res, next) => {
-  if (req.user.id === req.params.id) {
-    try {
-      const listings = await Listing.find({ userRef: req.params.id });
-      res.status(200).json(listings);
-    } catch (error) {
-      next(error);
-    }
-  } else {
-    return next(errorHandler(401, 'You can only get your own listings!'));
+  // التحقق من أن المستخدم يطلب إعلاناته الشخصية فقط
+  if (req.user.id !== req.params.id) {
+    return next(errorHandler(401, 'يمكنك عرض إعلاناتك الخاصة فقط!'));
+  }
+
+  try {
+    // جلب كافة العقارات المرتبطة بهذا المستخدم دون تصفية حسب الـ status
+    const listings = await Listing.find({ userRef: req.params.id }).sort({ createdAt: -1 });
+    
+    res.status(200).json(listings);
+  } catch (error) {
+    next(error);
   }
 };
 

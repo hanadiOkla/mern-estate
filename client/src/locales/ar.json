@@ -85,9 +85,13 @@
     "sale_subtitle": "استثمر في منزل أحلامك الدائم",
     "see_all_sale": "شاهد كل العقارات المعروضة للبيع"
   },
-  "profile": {
+"profile": {
     "title": "إعدادات الحساب",
     "subtitle": "إدارة تفاصيل حسابك وعقاراتك المدرجة.",
+    "tab_all": "الكل",
+    "tab_active": "المقبولة",
+    "tab_pending": "المعلقة",
+    "tab_rejected": "المرفوضة",
     "upload_error": "خطأ في الرفع (الحد الأقصى 2 ميجابايت)",
     "uploading": "جاري الرفع",
     "upload_success": "تم الرفع بنجاح!",
@@ -104,14 +108,18 @@
     "sign_out": "تسجيل الخروج",
     "update_success_msg": "تم تحديث الملف الشخصي بنجاح!",
     "delete_listing_success": "تم حذف العقار بنجاح!",
-    "listings_title": "قائمة عقاراتك",
+    "listings_title": "إعلاناتي",
     "listings_subtitle": "اضغط على الزر أدناه لجلب وإدارة جميع العقارات المدرجة تحت حسابك.",
     "load_listings_btn": "تحميل عقاراتي",
+    "no_listings": "لا توجد إعلانات متوفرة في هذا القسم.",
     "listings_error": "خطأ في تحميل العقارات. يرجى المحاولة مرة أخرى.",
     "listed_count": "عقاراتك المدرجة ({{count}})",
     "refresh": "تحديث",
     "edit": "تعديل",
     "delete": "حذف",
+    "status_active": "مقبول",
+    "status_pending": "قيد المراجعة",
+    "status_rejected": "مرفوض",
     "modal_title": "تأكيد الحذف",
     "modal_desc_listing": "هل أنت متأكد من رغبتك في حذف هذا العقار؟ لا يمكن التراجع عن هذا الإجراء.",
     "modal_desc_account": "هل أنت متأكد من رغبتك في حذف حسابك؟ سيتم إزالة جميع البيانات بشكل دائم.",
@@ -231,7 +239,11 @@
     "bathroomsCount_few": "{{count}} حمامات",
     "bathroomsCount_many": "{{count}} حمام",
     "bathroomsCount_other": "{{count}} حمام",
-    "contactBtn": "تواصل مع المعلن"
+    "contactBtn": "تواصل مع المعلن",
+    "link_copied": "تم نسخ رابط العقار بنجاح!",
+    "premium_feature": "ميزة خاصة بالأعضاء",
+    "premium_desc": "تحليل السوق والتقييم الذكي متاحان فقط للأعضاء المسجلين. يرجى تسجيل الدخول للوصول إلى التقديرات اتجاهات السوق.",
+    "sign_in_now": "تسجيل الدخول الآن"
   },
   "contact": {
     "title": "تواصل مع المعلن",
@@ -260,5 +272,17 @@
     "copyrights": "© {{year}} سهند إستيت. جميع الحقوق محفوظة.",
     "privacyPolicy": "سياسة الخصوصية",
     "termsOfService": "شروط الخدمة"
-  }
+  },
+  "admin": {
+  "dashboard_title": "لوحة تحكم الإدارة - مراجعة الإعلانات",
+  "dashboard_nav": "لوحة التحكم",
+  "loading": "جاري تحميل الإعلانات المعلقة...",
+  "no_pending": "لا يوجد إعلانات معلقة بانتظار المراجعة حالياً ...",
+  "preview": "معاينة",
+  "approve": "موافقة",
+  "reject": "رفض",
+  "approval_success": "تم تحديث حالة العقار بنجاح!",
+  "approved_by_label": "تمت المراجعة والموافقة بواسطة:",
+  "approved_at_label": "تاريخ الموافقة:"
+}
 }

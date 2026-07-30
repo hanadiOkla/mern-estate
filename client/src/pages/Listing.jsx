@@ -3,10 +3,10 @@ import { useParams, Link } from "react-router-dom";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { useSelector } from "react-redux";
 import { Navigation } from "swiper/modules";
-import { useTranslation } from "react-i18next"; 
+import { useTranslation } from "react-i18next";
 
 // 1️⃣ استيراد رابط الـ API المركزي والنظيف
-import { API_BASE_URL } from "../config"; 
+import { API_BASE_URL } from "../config";
 
 import "swiper/css";
 
@@ -19,18 +19,19 @@ import {
   FaShare,
   FaChevronLeft,
   FaChevronRight,
+  FaCheckCircle,
 } from "react-icons/fa";
 import Contact from "../components/Contact";
 
 export default function Listing() {
-  const { t, i18n } = useTranslation(); 
+  const { t, i18n } = useTranslation();
   const [listing, setListing] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const [copied, setCopied] = useState(false);
   const [contact, setContact] = useState(false);
 
-  // --- States for AI ---
+  // --- States for AI Valuation ---
   const [valuation, setValuation] = useState(null);
   const [valLoading, setValLoading] = useState(false);
   const [valError, setValError] = useState(null);
@@ -46,7 +47,6 @@ export default function Listing() {
     const fetchListing = async () => {
       try {
         setLoading(true);
-        // 2️⃣ استخدام الـ API_BASE_URL المستورد هنا بدلاً من window
         const res = await fetch(`${API_BASE_URL}/api/listing/get/${params.listingId}`, {
           method: 'GET',
           credentials: 'include',
@@ -77,7 +77,6 @@ export default function Listing() {
         setValLoading(true);
         setValError(null);
 
-        // 3️⃣ استخدام الـ API_BASE_URL المستورد هنا أيضاً لطلب الـ AI
         const res = await fetch(`${API_BASE_URL}/api/listing/evaluate-ai`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -101,7 +100,7 @@ export default function Listing() {
     };
 
     fetchAIValuation();
-  }, [listing, currentUser]); 
+  }, [listing, currentUser]);
 
   useEffect(() => {
     if (swiperInstance && swiperInstance.params) {
@@ -188,7 +187,7 @@ export default function Listing() {
             <p className={`fixed top-[21%] z-10 rounded-md bg-white border border-emerald-200 text-emerald-700 shadow-lg p-2 text-sm font-medium ${
               i18n.language === "ar" ? "left-[3%]" : "right-[3%]"
             }`}>
-              {i18n.language === "ar" ? "تم نسخ رابط العقار بنجاح!" : "Link copied!"}
+              {t("listing.link_copied")}
             </p>
           )}
 
@@ -226,6 +225,32 @@ export default function Listing() {
               )}
             </div>
 
+            {/* 🛡️ شارة توثيق المشرف المعتمد (القسم المضاف والمترجم) */}
+            {listing.approvedBy && (
+              <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl p-4 my-1 flex items-center gap-3 text-xs sm:text-sm shadow-sm">
+                <img 
+                  src={listing.approvedBy.avatar || 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png'} 
+                  alt={listing.approvedBy.username} 
+                  className="w-10 h-10 rounded-full object-cover border-2 border-emerald-500 shadow-xs"
+                />
+                <div className="flex-1">
+                  <div className="flex items-center gap-1.5 font-bold text-emerald-900">
+                    <FaCheckCircle className="text-emerald-600 text-base" />
+                    <span>{t("admin.approved_by_label")} {listing.approvedBy.username}</span>
+                  </div>
+                  {listing.approvedAt && (
+                    <p className="text-xs text-emerald-600 mt-0.5 font-medium">
+                      {t("admin.approved_at_label")}{" "}
+                      {new Date(listing.approvedAt).toLocaleDateString(
+                        i18n.language === "ar" ? "ar-SA" : "en-US",
+                        { year: 'numeric', month: 'long', day: 'numeric' }
+                      )}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+
             <div className="text-slate-700 leading-relaxed bg-slate-50 p-4 rounded-lg border border-slate-100">
               <h3 className="font-bold text-slate-900 mb-1">{t("listing.label_desc")}</h3>
               <p className="text-sm text-slate-600">{listing.description}</p>
@@ -243,16 +268,16 @@ export default function Listing() {
               {!currentUser ? (
                 <div className="text-center p-5 bg-white rounded-lg border border-dashed border-slate-300 shadow-sm">
                   <p className="text-amber-600 font-bold text-sm flex items-center justify-center gap-1 mb-1">
-                    🔒 Premium Feature
+                    🔒 {t("listing.premium_feature")}
                   </p>
                   <p className="text-xs text-slate-500 leading-relaxed">
-                    Market analysis and smart valuation are only available for registered members. Please sign in to view fair market estimates and real estate trends.
+                    {t("listing.premium_desc")}
                   </p>
                   <Link
                     to="/sign-in"
                     className="inline-block mt-3 bg-blue-600 text-white font-semibold px-5 py-2 rounded-lg text-xs hover:bg-blue-700 shadow-sm transition-all"
                   >
-                    Sign In Now
+                    {t("listing.sign_in_now")}
                   </Link>
                 </div>
               ) : (
@@ -285,9 +310,7 @@ export default function Listing() {
                         </div>
 
                         <div className={`flex mt-2 md:mt-0 ${i18n.language === "ar" ? "md:justify-end" : "md:justify-start"}`}>
-                          <span
-                            className={`px-3 py-1.5 rounded-full font-bold text-xs shadow-sm bg-blue-100 text-blue-800 border border-blue-200`}
-                          >
+                          <span className="px-3 py-1.5 rounded-full font-bold text-xs shadow-sm bg-blue-100 text-blue-800 border border-blue-200">
                             {t("listing.ai_val_status_label")} {valuation.priceStatus || "N/A"}
                           </span>
                         </div>

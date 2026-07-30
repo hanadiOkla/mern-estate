@@ -1,4 +1,5 @@
 import Listing from "../models/listing.model.js";
+import User from '../models/user.model.js';
 import { errorHandler } from "../utils/error.js";
 import OpenAI from "openai";
 import dotenv from "dotenv";
@@ -13,7 +14,7 @@ const openai = new OpenAI({
 // --- Helper Functions --- 
 
 /**
- *  Helper function to safely clean and parse OpenAI response into a JSON object
+ * Helper function to safely clean and parse OpenAI response into a JSON object
  */
 const parseAIJsonResponse = (rawContent) => {
   const cleaned = rawContent.replace(/^```json\s*|```$/g, "").trim();
@@ -36,9 +37,18 @@ const requestAIChatCompletion = async (prompt, temperature = 0.5) => {
 
 
 // --- Core Listing Controllers ---
+
+// 1. إنشاء عقار جديد (يدخل تلقائياً بحالة pending_approval)
 export const createListing = async (req, res, next) => {
   try {
-    const listing = await Listing.create(req.body);
+    const listingData = {
+      ...req.body,
+      // حماية: فرس الحقول الأمنية لمنع التلاعب وتحديد حالة الانتظار
+      status: 'pending_approval',
+      isApproved: false,
+    };
+
+    const listing = await Listing.create(listingData);
     return res.status(201).json(listing);
   } catch (error) {
     next(error);
@@ -69,12 +79,21 @@ export const updateListing = async (req, res, next) => {
     if (req.user.id !== listing.userRef) {
       return next(errorHandler(401, "You can only update your own listings!"));
     }
-    const updateListing = await Listing.findByIdAndUpdate(
+    
+    // عند تحديث العقار، يفضل إعادته لحالة المراجعة لضمان عدم قيام المستخدم بتعديل المحتوى لشيء مخالف بعد الموافقة
+    const updateData = {
+      ...req.body,
+      status: req.user.role === 'admin' ? (req.body.status || 'active') : 'pending_approval',
+      approvedBy: req.user.role === 'admin' ? req.body.approvedBy : null,
+      approvedAt: req.user.role === 'admin' ? req.body.approvedAt : null,
+    };
+
+    const updatedListing = await Listing.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      updateData,
       { new: true },
     );
-    res.status(200).json(updateListing);
+    res.status(200).json(updatedListing);
   } catch (error) {
     next(error);
   }
@@ -82,7 +101,9 @@ export const updateListing = async (req, res, next) => {
 
 export const getListing = async (req, res, next) => {
   try {
-    const listing = await Listing.findById(req.params.id);
+    const listing = await Listing.findById(req.params.id)
+      .populate('approvedBy', 'username email avatar'); // جلب بيانات المشرف الذي وافق على العقار
+    
     if (!listing) return next(errorHandler(404, "Listing not found!"));
 
     res.status(200).json(listing);
@@ -91,8 +112,9 @@ export const getListing = async (req, res, next) => {
   }
 };
 
+// جلب العقارات العامة (تعديل: الفلترة التلقائية لعرض العقارات النشطة فقط)
 export const getListings = async (req, res, next) => {
-try {
+  try {
     const limit = parseInt(req.query.limit) || 9;
     const startIndex = parseInt(req.query.startIndex) || 0;
 
@@ -111,19 +133,89 @@ try {
       furnished,
       parking,
       type,
+      status: "active" // 🛡️ حماية: الزوار والبحث العام يعرض فقط العقارات المقبولة والمعتمدة
     })
       .sort({ [sort]: order })
       .limit(limit)
       .skip(startIndex);
 
     return res.status(200).json(listings);
-  }catch (error) {
+  } catch (error) {
     next(error);
   }
 };
 
 
+// --- Admin-Only Controllers (لوحة تحكم المشرفين) ---
 
+// 1. جلب كافة العقارات المعلقة بانتظار المراجعة
+export const getPendingListings = async (req, res, next) => {
+  try {
+    const limit = parseInt(req.query.limit) || 20;
+    const startIndex = parseInt(req.query.startIndex) || 0;
+
+    const pendingListings = await Listing.find({ status: "pending_approval" })
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .skip(startIndex);
+
+    res.status(200).json(pendingListings);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// 2. الموافقة على العقار أو رفضه وتوثيق المشرف المسؤول
+export const approveListing = async (req, res, next) => {
+  try {
+    const currentUser = await User.findById(req.user.id);
+// 💡 التحقق إما عن طريق role === 'admin' أو isAdmin === true حسب الموديل لديكِ
+    if (!currentUser || (currentUser.role !== 'admin' && !currentUser.isAdmin)) {
+      return next(errorHandler(403, "غير مصرح لك ببدء هذه العملية!"));
+    }
+    
+    const { id } = req.params;
+    const { action } = req.body; // نمرر 'approve' للموافقة أو 'reject' للرفض
+
+    let updateFields = {};
+
+    if (action === 'approve') {
+      updateFields = {
+        status: 'active',
+        isApproved: true, // 👈 إضافة الحقل لتسهيل الفلترة مستقبلاً
+        approvedBy: req.user.id,
+        approvedAt: new Date()
+      };
+    } else if (action === 'reject') {
+      updateFields = {
+        status: 'rejected',
+        isApproved: false, // 👈 جعلها false عند الرفض
+        approvedBy: req.user.id,
+        approvedAt: new Date()
+      };
+    } else {
+      return next(errorHandler(400, "Invalid action! Use 'approve' or 'reject'."));
+    }
+
+    const updatedListing = await Listing.findByIdAndUpdate(
+      id,
+      updateFields,
+      { new: true }
+    ).populate('approvedBy', 'username email avatar');
+
+    if (!updatedListing) {
+      return next(errorHandler(404, "Listing not found!"));
+    }
+
+    res.status(200).json({
+      success: true,
+      message: action === 'approve' ? "تمت الموافقة على الإعلان بنجاح" : "تم رفض الإعلان بنجاح",
+      listing: updatedListing
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 
 
 // --- AI Features Controllers ---
@@ -140,7 +232,6 @@ export const generateAIDescription = async (req, res, next) => {
     offer,
   } = req.body;
 
-  // التحقق من وجود البيانات الأساسية اللازمة
   if (!name || !type || !address) {
     return res.status(400).json({
       success: false,
@@ -192,8 +283,8 @@ export const generateAIDescription = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      description: combinedDescription, // سيعود نص واحد يحتوي العربي وتحته الإنجليزي
-      title: combinedTitle,            // سيعود العنوانين معاً كـ نص واحد
+      description: combinedDescription, 
+      title: combinedTitle,            
     });
 
   } catch (error) {
