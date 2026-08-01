@@ -73,17 +73,17 @@
     "hero_title_1": "Find your next",
     "hero_perfect": "perfect",
     "hero_title_2": "place with ease",
-    "hero_description": "ApexReal Estate is the best place to find your next perfect place to live. We have a wide range of properties for you to choose from.",
-    "lets_start": "Let's Start Now",
-    "recent_offers": "Recent Offers",
-    "offers_subtitle": "Explore our latest deals and discounts",
-    "see_all_offers": "See all offers",
-    "properties_rent": "Properties for Rent",
+    "hero_description": "Our platform is the best place to find your next perfect place to live. We have a wide range of properties for you to choose from.",
+    "lets_start": "Let's get started",
+    "recent_offers": "Recent offers",
+    "offers_subtitle": "Explore our latest deals and special discounts",
+    "see_all_offers": "Show more offers",
+    "properties_rent": "Recent places for rent",
     "rent_subtitle": "Find a cozy place to rent today",
-    "see_all_rentals": "See all rentals",
-    "properties_sale": "Properties for Sale",
+    "see_all_rentals": "Show more places for rent",
+    "properties_sale": "Recent places for sale",
     "sale_subtitle": "Invest in your permanent dream home",
-    "see_all_sale": "See all for sale"
+    "see_all_sale": "Show more places for sale"
   },
 "profile": {
     "title": "Profile Settings",
@@ -266,15 +266,16 @@
     "termsOfService": "Terms of Service"
   },
   "admin": {
-  "dashboard_title": "Admin Dashboard - Review Listings",
-  "dashboard_nav": "Admin Dashboard",
-  "loading": "Loading pending listings...",
-  "no_pending": "No pending listings waiting for review currently...",
-  "preview": "Preview",
-  "approve": "Approve",
-  "reject": "Reject",
-  "approval_success": "Listing status updated successfully!",
-  "approved_by_label": "Reviewed and approved by:",
-  "approved_at_label": "Approved date:"
-}
+    "dashboard_title": "Admin Dashboard - Review Listings",
+    "dashboard_nav": "Admin Dashboard",
+    "loading": "Loading pending listings...",
+    "no_pending": "No pending listings waiting for review currently...",
+    "preview": "Preview",
+    "approve": "Approve",
+    "reject": "Reject",
+    "approval_success": "Listing status updated successfully!",
+    "approved_by_label": "Reviewed and approved by:",
+    "approved_at_label": "Approved date:",
+    "per_month": "/ month"
+  }
 }

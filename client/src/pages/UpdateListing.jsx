@@ -8,18 +8,62 @@ import {
 import { app } from "../firebase";
 import { useSelector } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
-// 1. استيراد خطاف الترجمة من react-i18next
 import { useTranslation } from "react-i18next";
-import { API_BASE_URL } from '../config';
+import toast, { Toaster } from "react-hot-toast";
 
+// ----------------------------------------------------------------------
+// Skeleton Loader Component (يظهر أثناء جلب البيانات الأولية)
+// ----------------------------------------------------------------------
+const ListingFormSkeleton = ({ isRtl }) => (
+  <div className="bg-slate-50/50 min-h-screen py-10 px-4">
+    <div className="max-w-6xl mx-auto bg-white rounded-3xl p-6 md:p-8 shadow-xl border border-slate-100 animate-pulse">
+      <div className="flex flex-col items-center mb-8 gap-3">
+        <div className="h-6 w-32 bg-slate-200 rounded-full"></div>
+        <div className="h-8 w-64 bg-slate-200 rounded-xl"></div>
+        <div className="h-4 w-48 bg-slate-200 rounded-lg"></div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div className="lg:col-span-7 flex flex-col gap-6">
+          <div className="bg-slate-100 p-6 rounded-3xl flex flex-col gap-4">
+            <div className="h-6 w-1/3 bg-slate-200 rounded-lg"></div>
+            <div className="h-12 w-full bg-slate-200 rounded-xl"></div>
+            <div className="h-12 w-full bg-slate-200 rounded-xl"></div>
+            <div className="h-28 w-full bg-slate-200 rounded-xl"></div>
+          </div>
+          <div className="bg-slate-100 p-6 rounded-3xl flex flex-col gap-4">
+            <div className="h-6 w-1/3 bg-slate-200 rounded-lg"></div>
+            <div className="grid grid-cols-3 gap-3">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="h-10 bg-slate-200 rounded-xl"></div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="lg:col-span-5 flex flex-col gap-6">
+          <div className="bg-slate-100 p-6 rounded-3xl flex flex-col gap-4">
+            <div className="h-6 w-1/3 bg-slate-200 rounded-lg"></div>
+            <div className="h-12 w-full bg-slate-200 rounded-xl"></div>
+            <div className="h-32 w-full bg-slate-200 rounded-2xl"></div>
+            <div className="h-12 w-full bg-slate-200 rounded-xl"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+// ----------------------------------------------------------------------
+// Main Component
+// ----------------------------------------------------------------------
 export default function UpdateListing() {
+  const { t, i18n } = useTranslation();
+  const isRtl = i18n.language === "ar";
+
   const { currentUser } = useSelector((state) => state.user);
   const navigate = useNavigate();
   const params = useParams();
-
-  // 2. تفعيل دالة الترجمة ومعرفة الاتجاه الحالي
-  const { t, i18n } = useTranslation();
-  const isRtl = i18n.dir() === "rtl";
 
   const [files, setFiles] = useState([]);
   const [formData, setFormData] = useState({
@@ -36,48 +80,49 @@ export default function UpdateListing() {
     parking: false,
     furnished: false,
   });
-  const [imageUploadError, setImageUploadError] = useState(false);
+
+  const [pageLoading, setPageLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Modal states for deleting pictures
-  const [showModal, setShowModal] = useState(false);
-  const [imageIndexToDelete, setImageIndexToDelete] = useState(null);
-
-  // AI Description Generation States
+  // AI Description Generation State
   const [aiLoading, setAiLoading] = useState(false);
-  const [aiError, setAiError] = useState(null);
 
   // AI Valuation States
   const [valLoading, setValLoading] = useState(false);
-  const [valError, setValError] = useState(null);
   const [valuation, setValuation] = useState(null);
 
+  // Confirmation Modal State
+  const [showModal, setShowModal] = useState(false);
+  const [imageToDelete, setImageToDelete] = useState(null);
+
+  // Fetch Listing Data
   useEffect(() => {
     const fetchListing = async () => {
-      const listingId = params.listingId;
-      const res = await fetch(
-        `${API_BASE_URL}/api/listing/get/${listingId}`,
-        {
-          method: "GET",
-          credentials: "include", // 👈 السطر الموحد لضمان استقرار جلب العقار وتفادي مشاكل الـ CORS أونلاين
-        },
-      );
-      const data = await res.json();
-      if (data.success === false) {
-        console.log(data.message);
-        return;
+      try {
+        setPageLoading(true);
+        const listingId = params.listingId;
+        const res = await fetch(`/api/listing/get/${listingId}`);
+        const data = await res.json();
+        if (data.success === false) {
+          toast.error(data.message || t("listing.fetch_error"));
+          return;
+        }
+        setFormData(data);
+      } catch (err) {
+        toast.error(err.message || t("listing.fetch_error"));
+      } finally {
+        setPageLoading(false);
       }
-      setFormData(data);
     };
-    fetchListing();
-  }, [params.listingId]);
 
-  const handleImageSubmit = (e) => {
-    if (files.length > 0 && files.length + formData.imageUrls.length < 7) {
+    fetchListing();
+  }, [params.listingId, t]);
+
+  const handleImageSubmit = () => {
+    if (files.length > 0 && files.length + formData.imageUrls.length <= 6) {
       setUploading(true);
-      setImageUploadError(false);
+      const toastId = toast.loading(t("listing.media_uploading_btn"));
       const promises = [];
 
       for (let i = 0; i < files.length; i++) {
@@ -85,19 +130,22 @@ export default function UpdateListing() {
       }
       Promise.all(promises)
         .then((urls) => {
-          setFormData({
-            ...formData,
-            imageUrls: formData.imageUrls.concat(urls),
-          });
-          setImageUploadError(false);
+          setFormData((prev) => ({
+            ...prev,
+            imageUrls: prev.imageUrls.concat(urls),
+          }));
           setUploading(false);
+          setFiles([]);
+          toast.success(t("listing.images_upload_success") || "تم رفع الصور بنجاح!", {
+            id: toastId,
+          });
         })
-        .catch((err) => {
-          setImageUploadError(t("listing.upload_err_size"));
+        .catch(() => {
+          toast.error(t("listing.media_err_max_size"), { id: toastId });
           setUploading(false);
         });
     } else {
-      setImageUploadError(t("listing.upload_err_count"));
+      toast.error(t("listing.media_err_max_count"));
       setUploading(false);
     }
   };
@@ -122,300 +170,352 @@ export default function UpdateListing() {
           getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
             resolve(downloadURL);
           });
-        },
+        }
       );
     });
   };
 
   const triggerDeleteModal = (index) => {
-    setImageIndexToDelete(index);
+    setImageToDelete(index);
     setShowModal(true);
   };
 
   const handleConfirmDelete = () => {
-    if (imageIndexToDelete !== null) {
-      setFormData({
-        ...formData,
-        imageUrls: formData.imageUrls.filter(
-          (_, i) => i !== imageIndexToDelete,
-        ),
-      });
+    if (imageToDelete !== null) {
+      setFormData((prev) => ({
+        ...prev,
+        imageUrls: prev.imageUrls.filter((_, i) => i !== imageToDelete),
+      }));
+      setShowModal(false);
+      setImageToDelete(null);
+      toast.success(t("listing.image_deleted_success") || "تم حذف الصورة بنجاح");
     }
-    setShowModal(false);
-    setImageIndexToDelete(null);
+  };
+
+  const handleGenerateAIDescription = async () => {
+    if (!formData.name || !formData.address) {
+      toast.error(t("listing.ai_desc_err_missing"));
+      return;
+    }
+
+    const toastId = toast.loading(t("listing.ai_desc_loading"));
+    try {
+      setAiLoading(true);
+
+      const res = await fetch("/api/ai/generate-description", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: formData.name,
+          address: formData.address,
+          type: formData.type,
+          bedrooms: formData.bedrooms,
+          bathrooms: formData.bathrooms,
+          parking: formData.parking,
+          furnished: formData.furnished,
+          offer: formData.offer,
+          regularPrice: formData.regularPrice,
+          discountPrice: formData.discountPrice,
+          language: i18n.language,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || t("listing.ai_desc_err_failed"));
+      }
+
+      setFormData((prev) => ({
+        ...prev,
+        description: data.description,
+      }));
+      toast.success(t("listing.ai_desc_success") || "تم توليد الوصف بالذكاء الاصطناعي! ✨", {
+        id: toastId,
+      });
+    } catch (err) {
+      toast.error(err.message, { id: toastId });
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const handleAIValuation = async () => {
+    if (!formData.address) {
+      toast.error(t("listing.ai_val_err_missing_address"));
+      return;
+    }
+
+    const toastId = toast.loading(t("listing.ai_val_loading"));
+    try {
+      setValLoading(true);
+
+      const res = await fetch("/api/ai/valuation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          address: formData.address,
+          bedrooms: formData.bedrooms,
+          bathrooms: formData.bathrooms,
+          type: formData.type,
+          regularPrice: formData.regularPrice,
+          furnished: formData.furnished,
+          parking: formData.parking,
+          language: i18n.language,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || t("listing.ai_val_err_failed"));
+      }
+
+      setValuation(data.valuation);
+      toast.success(t("listing.ai_val_success") || "تم حساب التقييم العقاري بنجاح!", {
+        id: toastId,
+      });
+    } catch (err) {
+      toast.error(err.message, { id: toastId });
+    } finally {
+      setValLoading(false);
+    }
   };
 
   const handleChange = (e) => {
-    if (e.target.id === "sale" || e.target.id === "rent") {
-      setFormData({ ...formData, type: e.target.id });
+    const { id, type, value, checked } = e.target;
+
+    if (id === "sale" || id === "rent") {
+      setFormData((prev) => ({
+        ...prev,
+        type: id,
+      }));
+      return;
     }
 
-    if (
-      e.target.id === "parking" ||
-      e.target.id === "furnished" ||
-      e.target.id === "offer"
-    ) {
-      setFormData({ ...formData, [e.target.id]: e.target.checked });
+    if (id === "parking" || id === "furnished" || id === "offer") {
+      setFormData((prev) => ({
+        ...prev,
+        [id]: checked,
+      }));
+      return;
     }
 
-    if (
-      e.target.type === "number" ||
-      e.target.type === "text" ||
-      e.target.type === "textarea"
-    ) {
-      setFormData({
-        ...formData,
-        [e.target.id]:
-          e.target.type === "number"
-            ? parseInt(e.target.value)
-            : e.target.value,
-      });
+    if (type === "number" || type === "text" || type === "textarea") {
+      setFormData((prev) => ({
+        ...prev,
+        [id]: type === "number" ? (value === "" ? "" : +value) : value,
+      }));
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      if (formData.imageUrls.length < 1)
-        return setError(t("listing.submit_err_images"));
-      if (+formData.regularPrice < +formData.discountPrice)
-        return setError(t("listing.submit_err_discount"));
+      if (formData.imageUrls.length < 1) {
+        toast.error(t("listing.submit_err_min_img"));
+        return;
+      }
+      if (+formData.regularPrice < +formData.discountPrice) {
+        toast.error(t("listing.submit_err_discount_price"));
+        return;
+      }
 
       setLoading(true);
-      setError(false);
-      const res = await fetch(
-        `${API_BASE_URL}/api/listing/update/${params.listingId}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ...formData, userRef: currentUser._id }),
-          credentials: "include", // 👈 السطر الجوهري لتمرير الكوكيز والتحقق من صلاحية التعديل أونلاين
+      const toastId = toast.loading(t("listing.submit_loading"));
+
+      const res = await fetch(`/api/listing/update/${params.listingId}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-      );
-      const data = await res.json();
-      setLoading(false);
-      if (data.success === false) {
-        setError(data.message);
-        return;
-      }
-      navigate(`/listing/${data._id}`);
-    } catch (error) {
-      setError(error.message);
-      setLoading(false);
-    }
-  };
-
-  const handleGenerateAI = async () => {
-    try {
-      if (!formData.name || !formData.address || !formData.type) {
-        setAiError(t("listing.ai_desc_missing_fields"));
-        return;
-      }
-
-      setAiLoading(true);
-      setAiError(null);
-
-      const res = await fetch(
-        `${API_BASE_URL}/api/listing/generate-ai`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify(formData),
-        },
-      );
-
-      const data = await res.json();
-
-      if (data.success === false) {
-        setAiError(data.message);
-        setAiLoading(false);
-        return;
-      }
-
-      setFormData({
-        ...formData,
-        description: data.description,
+        body: JSON.stringify({
+          ...formData,
+          userRef: currentUser._id,
+        }),
       });
 
-      setAiLoading(false);
-    } catch (error) {
-      setAiError(error.message);
-      setAiLoading(false);
-    }
-  };
-
-  const handleAIValuation = async (e) => {
-    e.preventDefault();
-
-    if (!formData.address || !formData.type) {
-      setValError(t("listing.ai_val_missing_fields"));
-      return;
-    }
-
-    try {
-      setValLoading(true);
-      setValError(null);
-      setValuation(null);
-
-      const res = await fetch(
-        `${API_BASE_URL}/api/listing/evaluate-ai`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify(formData),
-        },
-      );
-
       const data = await res.json();
+      setLoading(false);
 
       if (data.success === false) {
-        setValError(data.message);
-        setValLoading(false);
+        toast.error(data.message, { id: toastId });
         return;
       }
 
-      setValuation(data.valuation);
-      setValLoading(false);
-    } catch (err) {
-      setValError(t("listing.ai_val_conn_error"));
-      setValLoading(false);
+      toast.success(t("listing.update_success") || "تم تحديث العقار بنجاح!", {
+        id: toastId,
+      });
+      navigate(`/listing/${data._id}`);
+    } catch (error) {
+      toast.error(error.message);
+      setLoading(false);
     }
   };
 
+  // عرض الـ Skeleton عند التحميل الأولي
+  if (pageLoading) return <ListingFormSkeleton isRtl={isRtl} />;
+
   return (
-    <div
-      className="bg-slate-50/50 min-h-screen py-12 px-4 md:px-8"
-      i18n={i18n.language}
-    >
-      <main className="max-w-6xl mx-auto flex flex-col gap-8">
-        {/* Main Header */}
-        <div className={isRtl ? "text-right" : "text-left"}>
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+    <div className="bg-slate-50/50 min-h-screen py-10 px-4 transition-colors duration-300">
+      {/* Toast Notifications Provider */}
+      <Toaster
+        position={isRtl ? "bottom-left" : "bottom-right"}
+        toastOptions={{ duration: 4000 }}
+      />
+
+      <main className="p-4 md:p-8 max-w-6xl mx-auto bg-white rounded-3xl shadow-xl border border-slate-100">
+        <div className="flex flex-col items-center justify-center mb-8 text-center">
+          <span className="bg-blue-50 text-blue-600 font-bold text-xs uppercase tracking-wider px-4 py-1.5 rounded-full mb-3 border border-blue-100">
+            {t("listing.update_badge")}
+          </span>
+          <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight">
             {t("listing.update_title")}
           </h1>
-          <p className="text-sm text-slate-400 mt-1">
+          <p className="text-slate-500 text-sm mt-1 max-w-md">
             {t("listing.update_subtitle")}
           </p>
         </div>
 
         <form
           onSubmit={handleSubmit}
-          className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start"
+          className="grid grid-cols-1 lg:grid-cols-12 gap-8"
         >
-          {/* Left Column: Property Details & Options */}
-          <div className="lg:col-span-7 bg-white p-6 md:p-8 rounded-3xl shadow-xl shadow-slate-200/40 border border-slate-100 flex flex-col gap-5">
-            <h2
-              className={`text-lg font-bold text-slate-800 border-b border-slate-100 pb-3 flex items-center gap-2 ${isRtl ? "flex-row-reverse text-right" : "text-left"}`}
-            >
-              <svg
-                className="w-5 h-5 text-blue-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+          {/* Left Column: Form Controls & Inputs */}
+          <div className="lg:col-span-7 flex flex-col gap-6">
+            <div className="bg-white p-6 md:p-8 rounded-3xl shadow-xl shadow-slate-200/40 border border-slate-100 flex flex-col gap-5">
+              <h2
+                className={`text-lg font-bold text-slate-800 border-b border-slate-100 pb-3 flex items-center gap-2 ${
+                  isRtl ? "flex-row-reverse text-right" : "text-left"
+                }`}
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-                />
-              </svg>
-              {t("listing.sec_info_title")}
-            </h2>
+                <svg
+                  className="w-5 h-5 text-blue-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                {t("listing.sec_general_title")}
+              </h2>
 
-            <div
-              className={`flex flex-col gap-1.5 ${isRtl ? "text-right" : "text-left"}`}
-            >
-              <label
-                className={`text-xs font-bold text-slate-700 tracking-wide ${isRtl ? "mr-1" : "ml-1"}`}
-              >
-                {t("listing.label_title")}
-              </label>
-              <input
-                type="text"
-                placeholder={t("listing.placeholder_title")}
-                className={`border border-slate-200 rounded-xl p-3.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all bg-slate-50/20 ${isRtl ? "text-right" : "text-left"}`}
-                id="name"
-                maxLength="62"
-                minLength="10"
-                required
-                onChange={handleChange}
-                value={formData.name}
-              />
-            </div>
-
-            <div
-              className={`flex flex-col gap-1.5 ${isRtl ? "text-right" : "text-left"}`}
-            >
-              <div
-                className={`flex justify-between items-center flex-wrap gap-2 ${isRtl ? "flex-row-reverse" : ""}`}
-              >
+              <div className="flex flex-col gap-2">
                 <label
-                  className={`text-xs font-bold text-slate-700 tracking-wide ${isRtl ? "mr-1" : "ml-1"}`}
+                  className={`text-xs font-bold text-slate-600 ${
+                    isRtl ? "text-right mr-1" : "text-left ml-1"
+                  }`}
                 >
-                  {t("listing.label_desc")}
+                  {t("listing.title_label")}
                 </label>
-                <button
-                  type="button"
-                  disabled={aiLoading}
-                  onClick={handleGenerateAI}
-                  className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-3 py-1.5 rounded-xl text-xs font-semibold uppercase hover:opacity-95 disabled:opacity-80 flex items-center gap-2 shadow-sm transition"
-                >
-                  {aiLoading
-                    ? t("listing.ai_desc_loading")
-                    : t("listing.ai_desc_btn")}
-                </button>
+                <input
+                  type="text"
+                  placeholder={t("listing.title_placeholder")}
+                  className={`p-3.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 bg-slate-50/30 text-slate-700 font-medium ${
+                    isRtl ? "text-right" : "text-left"
+                  }`}
+                  id="name"
+                  maxLength="62"
+                  minLength="10"
+                  required
+                  onChange={handleChange}
+                  value={formData.name}
+                />
               </div>
-              <textarea
-                placeholder={t("listing.placeholder_desc")}
-                className={`border border-slate-200 rounded-xl p-3.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all bg-slate-50/20 min-h-[120px] ${isRtl ? "text-right" : "text-left"}`}
-                id="description"
-                required
-                onChange={handleChange}
-                value={formData.description}
-              />
-              {aiError && (
-                <div
-                  className={`bg-amber-50 text-amber-700 text-xs font-semibold p-3 rounded-xl border border-amber-200/70 mt-1 animate-fadeIn ${isRtl ? "text-right" : "text-left"}`}
-                  dir={isRtl ? "rtl" : "ltr"}
+
+              <div className="flex flex-col gap-2">
+                <label
+                  className={`text-xs font-bold text-slate-600 ${
+                    isRtl ? "text-right mr-1" : "text-left ml-1"
+                  }`}
                 >
-                  {aiError}
+                  {t("listing.address_label")}
+                </label>
+                <input
+                  type="text"
+                  placeholder={t("listing.address_placeholder")}
+                  className={`p-3.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 bg-slate-50/30 text-slate-700 font-medium ${
+                    isRtl ? "text-right" : "text-left"
+                  }`}
+                  id="address"
+                  required
+                  onChange={handleChange}
+                  value={formData.address}
+                />
+              </div>
+
+              {/* Description Field with AI Generation Option */}
+              <div className="flex flex-col gap-2">
+                <div
+                  className={`flex justify-between items-center ${
+                    isRtl ? "flex-row-reverse" : ""
+                  }`}
+                >
+                  <label
+                    className={`text-xs font-bold text-slate-600 ${
+                      isRtl ? "text-right mr-1" : "text-left ml-1"
+                    }`}
+                  >
+                    {t("listing.desc_label")}
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleGenerateAIDescription}
+                    disabled={aiLoading}
+                    className="bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold rounded-xl text-xs px-3 py-1.5 transition-all border border-purple-200/60 disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <span>✨</span>
+                    {aiLoading
+                      ? t("listing.ai_desc_loading")
+                      : t("listing.ai_desc_btn")}
+                  </button>
                 </div>
-              )}
+
+                <textarea
+                  placeholder={t("listing.desc_placeholder")}
+                  className={`p-3.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 bg-slate-50/30 text-slate-700 font-medium min-h-[120px] ${
+                    isRtl ? "text-right" : "text-left"
+                  }`}
+                  id="description"
+                  required
+                  onChange={handleChange}
+                  value={formData.description}
+                />
+              </div>
             </div>
 
-            <div
-              className={`flex flex-col gap-1.5 ${isRtl ? "text-right" : "text-left"}`}
-            >
-              <label
-                className={`text-xs font-bold text-slate-700 tracking-wide ${isRtl ? "mr-1" : "ml-1"}`}
+            {/* Checkboxes Options Group */}
+            <div className="bg-white p-6 md:p-8 rounded-3xl shadow-xl shadow-slate-200/40 border border-slate-100 flex flex-col gap-5">
+              <h2
+                className={`text-lg font-bold text-slate-800 border-b border-slate-100 pb-3 flex items-center gap-2 ${
+                  isRtl ? "flex-row-reverse text-right" : "text-left"
+                }`}
               >
-                {t("listing.label_address")}
-              </label>
-              <input
-                type="text"
-                placeholder={t("listing.placeholder_address")}
-                className={`border border-slate-200 rounded-xl p-3.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all bg-slate-50/20 ${isRtl ? "text-right" : "text-left"}`}
-                id="address"
-                required
-                onChange={handleChange}
-                value={formData.address}
-              />
-            </div>
+                <svg
+                  className="w-5 h-5 text-indigo-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                {t("listing.sec_features_title")}
+              </h2>
 
-            {/* Amenities & Checkboxes */}
-            <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100 mt-2">
-              <p
-                className={`text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 ${isRtl ? "text-right mr-1" : "text-left ml-1"}`}
-              >
-                {t("listing.sec_amenities_title")}
-              </p>
-              <div
-                className={`flex gap-5 flex-wrap ${isRtl ? "flex-row-reverse" : ""}`}
-              >
-                <label className="flex items-center gap-2.5 bg-white px-4 py-2.5 rounded-xl border border-slate-200 cursor-pointer hover:border-blue-300 transition-colors shadow-sm select-none">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <label
+                  className={`flex items-center gap-3 p-3 rounded-xl border border-slate-200/80 hover:border-slate-300 bg-slate-50/20 cursor-pointer transition-all ${
+                    isRtl ? "flex-row-reverse" : ""
+                  }`}
+                >
                   <input
                     type="checkbox"
                     id="sale"
@@ -423,12 +523,16 @@ export default function UpdateListing() {
                     onChange={handleChange}
                     checked={formData.type === "sale"}
                   />
-                  <span className="text-sm font-medium text-slate-700">
-                    {t("listing.opt_sell")}
+                  <span className="text-xs font-bold text-slate-700">
+                    {t("listing.type_sale")}
                   </span>
                 </label>
 
-                <label className="flex items-center gap-2.5 bg-white px-4 py-2.5 rounded-xl border border-slate-200 cursor-pointer hover:border-blue-300 transition-colors shadow-sm select-none">
+                <label
+                  className={`flex items-center gap-3 p-3 rounded-xl border border-slate-200/80 hover:border-slate-300 bg-slate-50/20 cursor-pointer transition-all ${
+                    isRtl ? "flex-row-reverse" : ""
+                  }`}
+                >
                   <input
                     type="checkbox"
                     id="rent"
@@ -436,12 +540,16 @@ export default function UpdateListing() {
                     onChange={handleChange}
                     checked={formData.type === "rent"}
                   />
-                  <span className="text-sm font-medium text-slate-700">
-                    {t("listing.opt_rent")}
+                  <span className="text-xs font-bold text-slate-700">
+                    {t("listing.type_rent")}
                   </span>
                 </label>
 
-                <label className="flex items-center gap-2.5 bg-white px-4 py-2.5 rounded-xl border border-slate-200 cursor-pointer hover:border-blue-300 transition-colors shadow-sm select-none">
+                <label
+                  className={`flex items-center gap-3 p-3 rounded-xl border border-slate-200/80 hover:border-slate-300 bg-slate-50/20 cursor-pointer transition-all ${
+                    isRtl ? "flex-row-reverse" : ""
+                  }`}
+                >
                   <input
                     type="checkbox"
                     id="parking"
@@ -449,12 +557,16 @@ export default function UpdateListing() {
                     onChange={handleChange}
                     checked={formData.parking}
                   />
-                  <span className="text-sm font-medium text-slate-700">
-                    {t("listing.opt_parking")}
+                  <span className="text-xs font-bold text-slate-700">
+                    {t("listing.feat_parking")}
                   </span>
                 </label>
 
-                <label className="flex items-center gap-2.5 bg-white px-4 py-2.5 rounded-xl border border-slate-200 cursor-pointer hover:border-blue-300 transition-colors shadow-sm select-none">
+                <label
+                  className={`flex items-center gap-3 p-3 rounded-xl border border-slate-200/80 hover:border-slate-300 bg-slate-50/20 cursor-pointer transition-all ${
+                    isRtl ? "flex-row-reverse" : ""
+                  }`}
+                >
                   <input
                     type="checkbox"
                     id="furnished"
@@ -462,12 +574,16 @@ export default function UpdateListing() {
                     onChange={handleChange}
                     checked={formData.furnished}
                   />
-                  <span className="text-sm font-medium text-slate-700">
-                    {t("listing.opt_furnished")}
+                  <span className="text-xs font-bold text-slate-700">
+                    {t("listing.feat_furnished")}
                   </span>
                 </label>
 
-                <label className="flex items-center gap-2.5 bg-white px-4 py-2.5 rounded-xl border border-slate-200 cursor-pointer hover:border-blue-300 transition-colors shadow-sm select-none">
+                <label
+                  className={`flex items-center gap-3 p-3 rounded-xl border border-slate-200/80 hover:border-slate-300 bg-slate-50/20 cursor-pointer transition-all ${
+                    isRtl ? "flex-row-reverse" : ""
+                  }`}
+                >
                   <input
                     type="checkbox"
                     id="offer"
@@ -475,192 +591,224 @@ export default function UpdateListing() {
                     onChange={handleChange}
                     checked={formData.offer}
                   />
-                  <span className="text-sm font-medium text-slate-700">
-                    {t("listing.opt_offer")}
+                  <span className="text-xs font-bold text-slate-700">
+                    {t("listing.feat_offer")}
                   </span>
                 </label>
               </div>
             </div>
 
-            {/* Numeric Fields */}
-            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4 mt-2">
-              <div className="flex flex-col gap-1.5">
-                <label
-                  className={`text-xs font-bold text-slate-600 ${isRtl ? "text-right mr-1" : "text-left ml-1"}`}
+            {/* Price and Specifications Group */}
+            <div className="bg-white p-6 md:p-8 rounded-3xl shadow-xl shadow-slate-200/40 border border-slate-100 flex flex-col gap-5">
+              <h2
+                className={`text-lg font-bold text-slate-800 border-b border-slate-100 pb-3 flex items-center gap-2 ${
+                  isRtl ? "flex-row-reverse text-right" : "text-left"
+                }`}
+              >
+                <svg
+                  className="w-5 h-5 text-emerald-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
                 >
-                  {t("listing.num_beds")}
-                </label>
-                <input
-                  type="number"
-                  id="bedrooms"
-                  min="1"
-                  max="10"
-                  required
-                  className="p-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 bg-slate-50/20 text-center font-semibold text-slate-700"
-                  onChange={handleChange}
-                  value={formData.bedrooms}
-                />
-              </div>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                {t("listing.sec_pricing_title")}
+              </h2>
 
-              <div className="flex flex-col gap-1.5">
-                <label
-                  className={`text-xs font-bold text-slate-600 ${isRtl ? "text-right mr-1" : "text-left ml-1"}`}
-                >
-                  {t("listing.num_baths")}
-                </label>
-                <input
-                  type="number"
-                  id="bathrooms"
-                  min="1"
-                  max="10"
-                  required
-                  className="p-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 bg-slate-50/20 text-center font-semibold text-slate-700"
-                  onChange={handleChange}
-                  value={formData.bathrooms}
-                />
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label
-                  className={`text-xs font-bold text-slate-600 ${isRtl ? "text-right mr-1" : "text-left ml-1"}`}
-                >
-                  {t("listing.num_price")}{" "}
-                  {formData.type === "rent" && (
-                    <span className="text-slate-400 font-normal">
-                      {t("listing.price_period")}
-                    </span>
-                  )}
-                </label>
-                <input
-                  type="number"
-                  id="regularPrice"
-                  min="50"
-                  max="10000000"
-                  required
-                  className="p-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 bg-slate-50/20 text-center font-semibold text-slate-700"
-                  onChange={handleChange}
-                  value={formData.regularPrice}
-                />
-              </div>
-
-              {formData.offer && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1.5">
                   <label
-                    className={`text-xs font-bold text-rose-600 ${isRtl ? "text-right mr-1" : "text-left ml-1"}`}
+                    className={`text-xs font-bold text-slate-600 ${
+                      isRtl ? "text-right mr-1" : "text-left ml-1"
+                    }`}
                   >
-                    {t("listing.num_discount")}{" "}
+                    {t("listing.num_beds")}
+                  </label>
+                  <input
+                    type="number"
+                    id="bedrooms"
+                    min="1"
+                    max="10"
+                    required
+                    className="p-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 bg-slate-50/20 text-center font-semibold text-slate-700"
+                    onChange={handleChange}
+                    value={formData.bedrooms}
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label
+                    className={`text-xs font-bold text-slate-600 ${
+                      isRtl ? "text-right mr-1" : "text-left ml-1"
+                    }`}
+                  >
+                    {t("listing.num_baths")}
+                  </label>
+                  <input
+                    type="number"
+                    id="bathrooms"
+                    min="1"
+                    max="10"
+                    required
+                    className="p-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 bg-slate-50/20 text-center font-semibold text-slate-700"
+                    onChange={handleChange}
+                    value={formData.bathrooms}
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label
+                    className={`text-xs font-bold text-slate-600 ${
+                      isRtl ? "text-right mr-1" : "text-left ml-1"
+                    }`}
+                  >
+                    {t("listing.num_price")}{" "}
                     {formData.type === "rent" && (
-                      <span className="text-rose-400 font-normal">
+                      <span className="text-slate-400 font-normal">
                         {t("listing.price_period")}
                       </span>
                     )}
                   </label>
                   <input
                     type="number"
-                    id="discountPrice"
-                    min="0"
+                    id="regularPrice"
+                    min="50"
                     max="10000000"
                     required
-                    className="p-3 border border-rose-200 rounded-xl text-sm focus:outline-none focus:border-rose-500 bg-rose-50/10 text-center font-bold text-rose-600 ring-1 ring-rose-100"
+                    className="p-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 bg-slate-50/20 text-center font-semibold text-slate-700"
                     onChange={handleChange}
-                    value={formData.discountPrice}
+                    value={formData.regularPrice}
                   />
                 </div>
-              )}
-            </div>
 
-            {/* AI Valuation Interactive Section Component */}
-            <div
-              className="bg-slate-50 p-5 rounded-2xl border border-slate-200 shadow-sm mt-3"
-              dir={isRtl ? "rtl" : "ltr"}
-            >
-              <div
-                className={`flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-2 ${isRtl ? "flex-row-reverse" : ""}`}
-              >
-                <div className="flex items-center gap-2">
-                  <span className="text-xl">💡</span>
-                  <h3 className="text-sm font-bold text-slate-800">
-                    {t("listing.ai_val_box_title")}
-                  </h3>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleAIValuation}
-                  disabled={valLoading}
-                  className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold rounded-xl text-xs px-4 py-2.5 hover:opacity-95 shadow-sm transition-all disabled:opacity-50"
-                >
-                  {valLoading
-                    ? t("listing.ai_val_loading")
-                    : t("listing.ai_val_btn")}
-                </button>
+                {formData.offer && (
+                  <div className="flex flex-col gap-1.5">
+                    <label
+                      className={`text-xs font-bold text-rose-600 ${
+                        isRtl ? "text-right mr-1" : "text-left ml-1"
+                      }`}
+                    >
+                      {t("listing.num_discount")}{" "}
+                      {formData.type === "rent" && (
+                        <span className="text-rose-400 font-normal">
+                          {t("listing.price_period")}
+                        </span>
+                      )}
+                    </label>
+                    <input
+                      type="number"
+                      id="discountPrice"
+                      min="0"
+                      max="10000000"
+                      required
+                      className="p-3 border border-rose-200 rounded-xl text-sm focus:outline-none focus:border-rose-500 bg-rose-50/10 text-center font-bold text-rose-600 ring-1 ring-rose-100"
+                      onChange={handleChange}
+                      value={formData.discountPrice}
+                    />
+                  </div>
+                )}
               </div>
 
-              {valError && (
+              {/* AI Valuation Interactive Section Component */}
+              <div
+                className="bg-slate-50 p-5 rounded-2xl border border-slate-200 shadow-sm mt-3"
+                dir={isRtl ? "rtl" : "ltr"}
+              >
                 <div
-                  className={`bg-amber-50 text-amber-700 text-xs font-semibold p-3 rounded-xl border border-amber-200/70 mt-3 ${isRtl ? "text-right" : "text-left"}`}
+                  className={`flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-2 ${
+                    isRtl ? "flex-row-reverse" : ""
+                  }`}
                 >
-                  {valError}
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">💡</span>
+                    <h3 className="text-sm font-bold text-slate-800">
+                      {t("listing.ai_val_box_title")}
+                    </h3>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleAIValuation}
+                    disabled={valLoading}
+                    className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold rounded-xl text-xs px-4 py-2.5 hover:opacity-95 shadow-sm transition-all disabled:opacity-50 cursor-pointer"
+                  >
+                    {valLoading
+                      ? t("listing.ai_val_loading")
+                      : t("listing.ai_val_btn")}
+                  </button>
                 </div>
-              )}
 
-              {valuation && (
-                <div
-                  className={`flex flex-col gap-3 bg-white p-4 rounded-xl border border-slate-100 mt-4 animate-fadeIn ${isRtl ? "text-right" : "text-left"}`}
-                >
-                  <div>
-                    <p className="text-xs text-slate-400 mb-1">
-                      {t("listing.ai_val_est_title")}
-                    </p>
-                    <p
-                      className="text-lg font-bold text-emerald-600 font-mono"
-                      dir="ltr"
-                    >
-                      ${valuation.estimatedMinPrice?.toLocaleString()} - $
-                      {valuation.estimatedMaxPrice?.toLocaleString()}
-                    </p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <p className="text-xs text-slate-400">
-                        {t("listing.ai_val_status_label")}
+                {valuation && (
+                  <div
+                    className={`flex flex-col gap-3 bg-white p-4 rounded-xl border border-slate-100 mt-4 animate-fadeIn ${
+                      isRtl ? "text-right" : "text-left"
+                    }`}
+                  >
+                    <div>
+                      <p className="text-xs text-slate-400 mb-1">
+                        {t("listing.ai_val_est_title")}
                       </p>
-                      <span
-                        className={`text-xs font-bold px-2 py-0.5 rounded-full ${valuation.priceStatus === "Good Deal" ? "bg-emerald-50 text-emerald-600 border border-emerald-100" : valuation.priceStatus === "Fair Price" ? "bg-blue-50 text-blue-600 border border-blue-100" : "bg-amber-50 text-amber-600 border border-amber-100"}`}
+                      <p
+                        className="text-lg font-bold text-emerald-600 font-mono"
+                        dir="ltr"
                       >
-                        {valuation.priceStatus}
-                      </span>
-                    </div>
-                    <p className="text-[10px] text-slate-400 mt-1 leading-relaxed">
-                      {t("listing.ai_val_disclaimer")}
-                    </p>
-                  </div>
-
-                  <div className="border-t border-slate-100 pt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div className="bg-slate-50/70 p-3 rounded-xl border border-slate-100">
-                      <h4 className="font-bold text-slate-700 text-xs mb-1">
-                        {t("listing.ai_val_trends_title")}
-                      </h4>
-                      <p className="text-slate-600 text-xs leading-relaxed">
-                        {/* نتحقق أولاً إذا كان التركيب الجديد كائن، فنأخذ اللغة الحالية، وإلا نرجع النص القديم تفادياً للـ undefined */}
-                        {typeof valuation.marketTrend === "object"
-                          ? valuation.marketTrend[i18n.language] ||
-                            valuation.marketTrend["ar"]
-                          : valuation.marketTrend}
+                        ${valuation.estimatedMinPrice?.toLocaleString()} - $
+                        {valuation.estimatedMaxPrice?.toLocaleString()}
+                      </p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <p className="text-xs text-slate-400">
+                          {t("listing.ai_val_status_label")}
+                        </p>
+                        <span
+                          className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                            valuation.priceStatus === "Good Deal"
+                              ? "bg-emerald-50 text-emerald-600 border border-emerald-100"
+                              : valuation.priceStatus === "Fair Price"
+                              ? "bg-blue-50 text-blue-600 border border-blue-100"
+                              : "bg-amber-50 text-amber-600 border border-amber-100"
+                          }`}
+                        >
+                          {valuation.priceStatus}
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-slate-400 mt-1 leading-relaxed">
+                        {t("listing.ai_val_disclaimer")}
                       </p>
                     </div>
 
-                    <div className="bg-slate-50/70 p-3 rounded-xl border border-slate-100">
-                      <h4 className="font-bold text-slate-700 text-xs mb-1">
-                        {t("listing.ai_val_advice_title")}
-                      </h4>
-                      <p className="text-slate-600 text-xs leading-relaxed">
-                        {typeof valuation.investmentAdvice === "object"
-                          ? valuation.investmentAdvice[i18n.language] ||
-                            valuation.investmentAdvice["ar"]
-                          : valuation.investmentAdvice}
-                      </p>
+                    <div className="border-t border-slate-100 pt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="bg-slate-50/70 p-3 rounded-xl border border-slate-100">
+                        <h4 className="font-bold text-slate-700 text-xs mb-1">
+                          {t("listing.ai_val_trends_title")}
+                        </h4>
+                        <p className="text-slate-600 text-xs leading-relaxed">
+                          {typeof valuation.marketTrend === "object"
+                            ? valuation.marketTrend[i18n.language] ||
+                              valuation.marketTrend["ar"]
+                            : valuation.marketTrend}
+                        </p>
+                      </div>
+
+                      <div className="bg-slate-50/70 p-3 rounded-xl border border-slate-100">
+                        <h4 className="font-bold text-slate-700 text-xs mb-1">
+                          {t("listing.ai_val_advice_title")}
+                        </h4>
+                        <p className="text-slate-600 text-xs leading-relaxed">
+                          {typeof valuation.investmentAdvice === "object"
+                            ? valuation.investmentAdvice[i18n.language] ||
+                              valuation.investmentAdvice["ar"]
+                            : valuation.investmentAdvice}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
 
@@ -668,7 +816,9 @@ export default function UpdateListing() {
           <div className="lg:col-span-5 flex flex-col gap-6">
             <div className="bg-white p-6 md:p-8 rounded-3xl shadow-xl shadow-slate-200/40 border border-slate-100 flex flex-col gap-5">
               <h2
-                className={`text-lg font-bold text-slate-800 border-b border-slate-100 pb-3 flex items-center gap-2 ${isRtl ? "flex-row-reverse text-right" : "text-left"}`}
+                className={`text-lg font-bold text-slate-800 border-b border-slate-100 pb-3 flex items-center gap-2 ${
+                  isRtl ? "flex-row-reverse text-right" : "text-left"
+                }`}
               >
                 <svg
                   className="w-5 h-5 text-emerald-600"
@@ -707,18 +857,13 @@ export default function UpdateListing() {
                     type="button"
                     disabled={uploading}
                     onClick={handleImageSubmit}
-                    className="px-4 text-xs font-bold text-emerald-600 border border-emerald-200 rounded-xl uppercase hover:bg-emerald-50 disabled:opacity-70 transition-all shrink-0"
+                    className="px-4 text-xs font-bold text-emerald-600 border border-emerald-200 rounded-xl uppercase hover:bg-emerald-50 disabled:opacity-70 transition-all shrink-0 cursor-pointer"
                   >
                     {uploading
                       ? t("listing.media_uploading_btn")
                       : t("listing.media_upload_btn")}
                   </button>
                 </div>
-                {imageUploadError && (
-                  <p className="text-red-500 text-xs font-medium mt-2 bg-red-50 p-2 rounded-lg text-center">
-                    {imageUploadError}
-                  </p>
-                )}
               </div>
 
               {/* Uploaded Images Preview Grid */}
@@ -727,10 +872,14 @@ export default function UpdateListing() {
                   {formData.imageUrls.map((url, index) => (
                     <div
                       key={url}
-                      className={`flex justify-between p-2.5 bg-white border border-slate-100 items-center rounded-xl shadow-sm ${isRtl ? "flex-row-reverse" : ""}`}
+                      className={`flex justify-between p-2.5 bg-white border border-slate-100 items-center rounded-xl shadow-sm ${
+                        isRtl ? "flex-row-reverse" : ""
+                      }`}
                     >
                       <div
-                        className={`flex items-center gap-3 truncate ${isRtl ? "flex-row-reverse" : ""}`}
+                        className={`flex items-center gap-3 truncate ${
+                          isRtl ? "flex-row-reverse" : ""
+                        }`}
                       >
                         <img
                           src={url}
@@ -746,7 +895,7 @@ export default function UpdateListing() {
                       <button
                         type="button"
                         onClick={() => triggerDeleteModal(index)}
-                        className="text-xs font-bold text-rose-600 hover:bg-rose-50 px-3 py-1.5 rounded-lg transition-all uppercase"
+                        className="text-xs font-bold text-rose-600 hover:bg-rose-50 px-3 py-1.5 rounded-lg transition-all uppercase cursor-pointer"
                       >
                         {t("listing.media_delete_btn")}
                       </button>
@@ -758,17 +907,12 @@ export default function UpdateListing() {
               <div className="flex flex-col gap-3 mt-2">
                 <button
                   disabled={loading || uploading}
-                  className="w-full bg-blue-600 text-white rounded-xl p-3.5 font-semibold uppercase hover:bg-blue-700 active:scale-[0.99] transition-all text-sm shadow-md shadow-blue-600/10 disabled:opacity-70"
+                  className="w-full bg-blue-600 text-white rounded-xl p-3.5 font-semibold uppercase hover:bg-blue-700 active:scale-[0.99] transition-all text-sm shadow-md shadow-blue-600/10 disabled:opacity-70 cursor-pointer"
                 >
                   {loading
                     ? t("listing.submit_loading")
                     : t("listing.submit_btn")}
                 </button>
-                {error && (
-                  <p className="text-red-500 text-xs font-medium text-center mt-1 bg-red-50 p-2 rounded-lg border border-red-100">
-                    {error}
-                  </p>
-                )}
               </div>
             </div>
           </div>
@@ -793,19 +937,21 @@ export default function UpdateListing() {
               </p>
             </div>
             <div
-              className={`flex gap-3 p-4 bg-slate-50 border-t border-slate-100 justify-center ${isRtl ? "flex-row-reverse" : ""}`}
+              className={`flex gap-3 p-4 bg-slate-50 border-t border-slate-100 justify-center ${
+                isRtl ? "flex-row-reverse" : ""
+              }`}
             >
               <button
                 type="button"
                 onClick={() => setShowModal(false)}
-                className="px-5 py-2.5 bg-slate-200 text-slate-700 font-semibold rounded-xl text-sm hover:bg-slate-300 transition-colors shadow-xs"
+                className="px-5 py-2.5 bg-slate-200 text-slate-700 font-semibold rounded-xl text-sm hover:bg-slate-300 transition-colors shadow-xs cursor-pointer"
               >
                 ✕ {t("listing.modal_cancel")}
               </button>
               <button
                 type="button"
                 onClick={handleConfirmDelete}
-                className="px-5 py-2.5 bg-red-500 text-white font-semibold rounded-xl text-sm hover:bg-red-600 transition-colors shadow-md flex items-center gap-1"
+                className="px-5 py-2.5 bg-red-500 text-white font-semibold rounded-xl text-sm hover:bg-red-600 transition-colors shadow-md flex items-center gap-1 cursor-pointer"
               >
                 🗑️ {t("listing.modal_confirm")}
               </button>

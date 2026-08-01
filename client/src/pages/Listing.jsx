@@ -2,13 +2,14 @@ import { useEffect, useState, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { useSelector } from "react-redux";
-import { Navigation } from "swiper/modules";
+import { Navigation, Autoplay } from "swiper/modules";
 import { useTranslation } from "react-i18next";
 
 // 1️⃣ استيراد رابط الـ API المركزي والنظيف
 import { API_BASE_URL } from "../config";
 
 import "swiper/css";
+import "swiper/css/navigation";
 
 import {
   FaBath,
@@ -25,6 +26,8 @@ import Contact from "../components/Contact";
 
 export default function Listing() {
   const { t, i18n } = useTranslation();
+  const isRtl = i18n.dir() === "rtl";
+
   const [listing, setListing] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
@@ -38,7 +41,6 @@ export default function Listing() {
 
   const prevRef = useRef(null);
   const nextRef = useRef(null);
-  const [swiperInstance, setSwiperInstance] = useState(null);
 
   const params = useParams();
   const { currentUser } = useSelector((state) => state.user);
@@ -100,20 +102,10 @@ export default function Listing() {
     };
 
     fetchAIValuation();
-  }, [listing, currentUser]);
-
-  useEffect(() => {
-    if (swiperInstance && swiperInstance.params) {
-      swiperInstance.params.navigation.prevEl = prevRef.current;
-      swiperInstance.params.navigation.nextEl = nextRef.current;
-      swiperInstance.navigation.destroy();
-      swiperInstance.navigation.init();
-      swiperInstance.navigation.update();
-    }
-  }, [swiperInstance, listing]);
+  }, [listing, currentUser, t]);
 
   return (
-    <main className="bg-slate-50 min-h-screen pb-12" dir={i18n.language === "ar" ? "rtl" : "ltr"}>
+    <main className="bg-slate-50 min-h-screen pb-12" dir={isRtl ? "rtl" : "ltr"}>
       {loading && (
         <p className="text-center my-7 text-2xl text-slate-700 font-medium">
           {t("listing.ai_val_loading")}
@@ -129,15 +121,20 @@ export default function Listing() {
           {/* حاوية السلايدر */}
           <div className="relative w-full group">
             <Swiper
-              modules={[Navigation]}
-              onSwiper={setSwiperInstance}
-              navigation={{
-                prevEl: prevRef.current,
-                nextEl: nextRef.current,
+              modules={[Navigation, Autoplay]}
+              key={i18n.language}
+              dir={isRtl ? "rtl" : "ltr"}
+              onBeforeInit={(swiper) => {
+                swiper.params.navigation.prevEl = prevRef.current;
+                swiper.params.navigation.nextEl = nextRef.current;
+              }}
+              onInit={(swiper) => {
+                swiper.navigation.init();
+                swiper.navigation.update();
               }}
               className="mySwiper w-full shadow-sm"
             >
-              {listing.imageUrls.map((url) => (
+              {listing.imageUrls?.map((url) => (
                 <SwiperSlide key={url}>
                   <div
                     className="h-[350px] sm:h-[500px] md:h-[550px] w-full"
@@ -150,30 +147,26 @@ export default function Listing() {
               ))}
             </Swiper>
 
-            {/* أزرار التنقل مع قلب الاتجاهات ديناميكياً */}
+            {/* أزرار التنقل المخصصة بالسلايدر */}
             <button
               ref={prevRef}
-              className={`absolute top-1/2 -translate-y-1/2 z-30 bg-white hover:bg-slate-50 text-slate-800 w-11 h-11 rounded-full flex justify-center items-center shadow-lg transition-all duration-200 hover:scale-105 border border-slate-100 ${
-                i18n.language === "ar" ? "right-4 sm:right-8 rotate-180" : "left-4 sm:left-8"
-              }`}
+              aria-label="Previous Slide"
+              className="absolute start-4 sm:start-8 top-1/2 -translate-y-1/2 z-30 bg-white hover:bg-slate-50 text-slate-800 w-11 h-11 rounded-full flex justify-center items-center shadow-lg transition-all duration-200 hover:scale-105 border border-slate-100 disabled:opacity-40"
             >
-              <FaChevronLeft className="text-base font-bold" />
+              <FaChevronLeft className="text-base font-bold rtl:rotate-180" />
             </button>
 
             <button
               ref={nextRef}
-              className={`absolute top-1/2 -translate-y-1/2 z-30 bg-white hover:bg-slate-50 text-slate-800 w-11 h-11 rounded-full flex justify-center items-center shadow-lg transition-all duration-200 hover:scale-105 border border-slate-100 ${
-                i18n.language === "ar" ? "left-4 sm:left-8 rotate-180" : "right-4 sm:right-8"
-              }`}
+              aria-label="Next Slide"
+              className="absolute end-4 sm:end-8 top-1/2 -translate-y-1/2 z-30 bg-white hover:bg-slate-50 text-slate-800 w-11 h-11 rounded-full flex justify-center items-center shadow-lg transition-all duration-200 hover:scale-105 border border-slate-100 disabled:opacity-40"
             >
-              <FaChevronRight className="text-base font-bold" />
+              <FaChevronRight className="text-base font-bold rtl:rotate-180" />
             </button>
           </div>
 
           {/* زر المشاركة */}
-          <div className={`fixed top-[13%] z-10 border border-slate-200 rounded-full w-12 h-12 flex justify-center items-center bg-white shadow-md hover:shadow-lg transition-all cursor-pointer ${
-            i18n.language === "ar" ? "left-[3%]" : "right-[3%]"
-          }`}>
+          <div className="fixed top-[13%] start-[3%] z-10 border border-slate-200 rounded-full w-12 h-12 flex justify-center items-center bg-white shadow-md hover:shadow-lg transition-all cursor-pointer">
             <FaShare
               className="text-slate-600 hover:text-blue-600 transition-colors"
               onClick={() => {
@@ -184,9 +177,7 @@ export default function Listing() {
             />
           </div>
           {copied && (
-            <p className={`fixed top-[21%] z-10 rounded-md bg-white border border-emerald-200 text-emerald-700 shadow-lg p-2 text-sm font-medium ${
-              i18n.language === "ar" ? "left-[3%]" : "right-[3%]"
-            }`}>
+            <p className="fixed top-[21%] start-[3%] z-10 rounded-md bg-white border border-emerald-200 text-emerald-700 shadow-lg p-2 text-sm font-medium">
               {t("listing.link_copied")}
             </p>
           )}
@@ -225,7 +216,7 @@ export default function Listing() {
               )}
             </div>
 
-            {/* 🛡️ شارة توثيق المشرف المعتمد (القسم المضاف والمترجم) */}
+            {/* 🛡️ شارة توثيق المشرف المعتمد */}
             {listing.approvedBy && (
               <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl p-4 my-1 flex items-center gap-3 text-xs sm:text-sm shadow-sm">
                 <img 
@@ -242,7 +233,7 @@ export default function Listing() {
                     <p className="text-xs text-emerald-600 mt-0.5 font-medium">
                       {t("admin.approved_at_label")}{" "}
                       {new Date(listing.approvedAt).toLocaleDateString(
-                        i18n.language === "ar" ? "ar-SA" : "en-US",
+                        isRtl ? "ar-SA" : "en-US",
                         { year: 'numeric', month: 'long', day: 'numeric' }
                       )}
                     </p>
@@ -309,7 +300,7 @@ export default function Listing() {
                           </p>
                         </div>
 
-                        <div className={`flex mt-2 md:mt-0 ${i18n.language === "ar" ? "md:justify-end" : "md:justify-start"}`}>
+                        <div className="flex mt-2 md:mt-0 md:justify-end">
                           <span className="px-3 py-1.5 rounded-full font-bold text-xs shadow-sm bg-blue-100 text-blue-800 border border-blue-200">
                             {t("listing.ai_val_status_label")} {valuation.priceStatus || "N/A"}
                           </span>

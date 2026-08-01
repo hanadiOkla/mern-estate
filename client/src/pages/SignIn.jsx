@@ -11,7 +11,7 @@ import { useTranslation } from "react-i18next";
 import { API_BASE_URL } from '../config';
 
 function SignIn() {
-  const [formData, setFormDate] = useState({});
+  const [formData, setFormData] = useState({});
   const { loading, error } = useSelector((state) => state.user);
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -20,13 +20,13 @@ function SignIn() {
   const isRtl = i18n.dir() === "rtl";
 
   const handleChange = (e) => {
-    setFormDate({
+    setFormData({
       ...formData,
       [e.target.id]: e.target.value,
     });
   };
 
-const handleSubmit = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       dispatch(signInStart());
@@ -35,7 +35,7 @@ const handleSubmit = async (e) => {
         headers: {
           "Content-Type": "application/json",
         },
-        credentials: 'include', // 👈 أضيفي هذا السطر ليقوم المتصفح بحفظ الكوكي تلقائياً
+        credentials: 'include',
         body: JSON.stringify(formData),
       });
 
@@ -44,9 +44,6 @@ const handleSubmit = async (e) => {
         dispatch(signInFailure(data.message));
         return;
       }
-
-      // حذفنا حفظ التوكن في localStorage لأنه لم يعد ضرورياً
-      // الكوكي ستُحفظ في المتصفح تلقائياً بفضل credentials: 'include'
       
       dispatch(signInSuccess(data));
       navigate("/");
@@ -56,7 +53,10 @@ const handleSubmit = async (e) => {
   };
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center bg-slate-50/50 px-4 py-12">
+    <div 
+      className="min-h-[80vh] flex items-center justify-center bg-slate-50/50 px-4 py-12"
+      dir={isRtl ? "rtl" : "ltr"}
+    >
       <div className="bg-white p-8 md:p-10 rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 w-full max-w-md flex flex-col gap-6 transition-all duration-300">
         <div className="text-center flex flex-col gap-1.5">
           <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">
@@ -68,28 +68,28 @@ const handleSubmit = async (e) => {
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4.5">
-          <div className={`flex flex-col gap-1.5 ${isRtl ? "text-right" : "text-left"}`}>
-            <label className={`text-xs font-bold text-slate-700 tracking-wide ${isRtl ? "mr-1" : "ml-1"}`}>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-bold text-slate-700 tracking-wide px-1">
               {t("signin.email_label")}
             </label>
             <input
               type="email"
               placeholder="name@example.com"
-              className={`border border-slate-200 rounded-xl p-3.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-slate-400 bg-slate-50/30 ${isRtl ? "text-right" : "text-left"}`}
+              className="border border-slate-200 rounded-xl p-3.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-slate-400 bg-slate-50/30"
               id="email"
               onChange={handleChange}
               required
             />
           </div>
 
-          <div className={`flex flex-col gap-1.5 mb-2 ${isRtl ? "text-right" : "text-left"}`}>
-            <label className={`text-xs font-bold text-slate-700 tracking-wide ${isRtl ? "mr-1" : "ml-1"}`}>
+          <div className="flex flex-col gap-1.5 mb-2">
+            <label className="text-xs font-bold text-slate-700 tracking-wide px-1">
               {t("signin.password_label")}
             </label>
             <input
               type="password"
               placeholder="••••••••"
-              className={`border border-slate-200 rounded-xl p-3.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-slate-400 bg-slate-50/30 ${isRtl ? "text-right" : "text-left"}`}
+              className="border border-slate-200 rounded-xl p-3.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-slate-400 bg-slate-50/30"
               id="password"
               onChange={handleChange}
               required
@@ -98,7 +98,7 @@ const handleSubmit = async (e) => {
 
           <button
             disabled={loading}
-            className="bg-blue-600 text-white p-3.5 rounded-xl font-semibold uppercase hover:bg-blue-700 active:scale-[0.99] transition-all shadow-md shadow-blue-600/10 text-sm disabled:opacity-70 disabled:pointer-events-none mt-2 flex items-center justify-center gap-2"
+            className="bg-blue-600 text-white p-3.5 rounded-xl font-semibold uppercase hover:bg-blue-700 active:scale-[0.99] transition-all shadow-md shadow-blue-600/10 text-sm disabled:opacity-70 disabled:pointer-events-none mt-2 flex items-center justify-center gap-2 cursor-pointer"
           >
             {loading ? (
               <>
@@ -124,7 +124,7 @@ const handleSubmit = async (e) => {
           <OAuth />
         </form>
 
-        <div className={`flex items-center justify-center gap-1.5 mt-2 text-sm font-medium border-t border-slate-100/80 pt-5 ${isRtl ? "flex-row-reverse" : ""}`}>
+        <div className="flex items-center justify-center gap-1.5 mt-2 text-sm font-medium border-t border-slate-100/80 pt-5">
           <p className="text-slate-500">{t("signin.no_account")}</p>
           <Link to={"/sign-up"}>
             <span className="text-blue-600 hover:text-blue-700 hover:underline transition-colors font-semibold">

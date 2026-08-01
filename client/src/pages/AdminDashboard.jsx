@@ -4,9 +4,12 @@ import { FaEye, FaCheck, FaTimes } from 'react-icons/fa';
 import { useTranslation } from 'react-i18next';
 
 export default function AdminDashboard() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [pendingListings, setPendingListings] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // تحديد الاتجاه ديناميكياً لتأمين توافق واجهات RTL / LTR
+  const isRtl = i18n.dir() === 'rtl' || i18n.language?.startsWith('ar');
 
   useEffect(() => {
     const fetchPendingListings = async () => {
@@ -48,7 +51,10 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className='p-4 max-w-5xl mx-auto min-h-[calc(100vh-250px)]'>
+    <div
+      className='p-4 max-w-5xl mx-auto min-h-[calc(100vh-250px)] font-sans antialiased'
+      dir={isRtl ? 'rtl' : 'ltr'}
+    >
       {/* 💡 العنوان الرئيسي من الـ JSON */}
       <h1 className='text-3xl font-bold text-center my-8 text-slate-800'>
         {t('admin.dashboard_title')}
@@ -82,14 +88,14 @@ export default function AdminDashboard() {
                       {listing.address}
                     </p>
                     <span className='inline-block bg-blue-50 text-blue-700 text-xs font-semibold px-2.5 py-0.5 rounded-full'>
-                      ${listing.regularPrice.toLocaleString()} {listing.type === 'rent' ? '/ month' : ''}
+                      ${listing.regularPrice ? listing.regularPrice.toLocaleString() : 0}
+                      {listing.type === 'rent' && ` ${t('admin.per_month')}`}
                     </span>
                   </div>
                 </div>
 
                 {/* 💡 الأزرار باستخدام مفاتيح preview, approve, reject */}
                 <div className='flex items-center gap-2 w-full md:w-auto justify-end border-t md:border-t-0 pt-3 md:pt-0 border-slate-100'>
-                  
                   <Link
                     to={`/listing/${listing._id}`}
                     target='_blank'
@@ -112,7 +118,6 @@ export default function AdminDashboard() {
                   >
                     <FaTimes /> {t('admin.reject')}
                   </button>
-
                 </div>
               </div>
             ))

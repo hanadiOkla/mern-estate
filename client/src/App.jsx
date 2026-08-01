@@ -13,11 +13,12 @@ import UpdateListing from "./pages/UpdateListing";
 import Listing from "./pages/Listing";
 import Search from "./pages/Search";
 import AdminDashboard from "./pages/AdminDashboard";
+import { ToastProvider } from "./context/ToastContext"; 
 function App() {
   return (
     <BrowserRouter>
+    <ToastProvider>
       <div className="flex flex-col min-h-screen justify-between">
-
         <Header />
         <main className="flex-grow">
           <Routes>
@@ -42,6 +43,7 @@ function App() {
         </main>
         <Footer />
       </div>
+      </ToastProvider>
     </BrowserRouter>
   );
 }

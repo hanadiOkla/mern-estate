@@ -8,13 +8,13 @@ import {
 import { app } from "../firebase";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { useTranslation } from "react-i18next"; // 1. استيراد خطاف الترجمة
-import { API_BASE_URL } from '../config';
+import { useTranslation } from "react-i18next";
+import { API_BASE_URL } from "../config";
 
 export default function CreateListing() {
   const { currentUser } = useSelector((state) => state.user);
   const navigate = useNavigate();
-  const { t, i18n } = useTranslation(); // 2. تم التعديل هنا: إضافة i18n لحل مشكلة الـ ReferenceError
+  const { t, i18n } = useTranslation();
 
   const [files, setFiles] = useState([]);
   const [formData, setFormData] = useState({
@@ -94,7 +94,7 @@ export default function CreateListing() {
           getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
             resolve(downloadURL);
           });
-        },
+        }
       );
     });
   };
@@ -160,6 +160,7 @@ export default function CreateListing() {
       setLoading(false);
       if (data.success === false) {
         setError(data.message);
+        return;
       }
       navigate(`/listing/${data._id}`);
     } catch (error) {

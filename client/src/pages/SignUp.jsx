@@ -1,22 +1,20 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import OAuth from "../components/OAuth";
-// 1. استيراد خطاف الترجمة من react-i18next
 import { useTranslation } from "react-i18next";
 import { API_BASE_URL } from '../config';
 
 function SignUp() {
-  const [formData, setFormDate] = useState({});
+  const [formData, setFormData] = useState({});
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  // 2. تفعيل دالة الترجمة ومعرفة الاتجاه الحالي
   const { t, i18n } = useTranslation();
   const isRtl = i18n.dir() === "rtl";
 
   const handleChange = (e) => {
-    setFormDate({
+    setFormData({
       ...formData,
       [e.target.id]: e.target.value,
     });
@@ -32,7 +30,7 @@ function SignUp() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(formData),
-        credentials: "include", // 👈 أضفناه هنا لتوحيد إعدادات الأمان ومنع أي تعارض CORS أونلاين
+        credentials: "include",
       });
 
       const data = await res.json();
@@ -51,9 +49,13 @@ function SignUp() {
   };
 
   return (
-    <div className="min-h-[85vh] flex items-center justify-center bg-slate-50/50 px-4 py-12">
+    <div 
+      className="min-h-[85vh] flex items-center justify-center bg-slate-50/50 px-4 py-12"
+      dir={isRtl ? "rtl" : "ltr"}
+    >
       {/* بطاقة إنشاء الحساب الرئيسية */}
       <div className="bg-white p-8 md:p-10 rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 w-full max-w-md flex flex-col gap-6 transition-all duration-300">
+        
         {/* العناوين والترحيب */}
         <div className="text-center flex flex-col gap-1.5">
           <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">
@@ -66,19 +68,16 @@ function SignUp() {
 
         {/* نموذج التسجيل */}
         <form onSubmit={handleSubmit} className="flex flex-col gap-4.5">
+          
           {/* حقل اسم المستخدم */}
-          <div
-            className={`flex flex-col gap-1.5 ${isRtl ? "text-right" : "text-left"}`}
-          >
-            <label
-              className={`text-xs font-bold text-slate-700 tracking-wide ${isRtl ? "mr-1" : "ml-1"}`}
-            >
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-bold text-slate-700 tracking-wide px-1">
               {t("signup.username_label")}
             </label>
             <input
               type="text"
               placeholder="johndoe"
-              className={`border border-slate-200 rounded-xl p-3.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-slate-400 bg-slate-50/30 ${isRtl ? "text-right" : "text-left"}`}
+              className="border border-slate-200 rounded-xl p-3.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-slate-400 bg-slate-50/30"
               id="username"
               onChange={handleChange}
               required
@@ -86,18 +85,14 @@ function SignUp() {
           </div>
 
           {/* حقل البريد الإلكتروني */}
-          <div
-            className={`flex flex-col gap-1.5 ${isRtl ? "text-right" : "text-left"}`}
-          >
-            <label
-              className={`text-xs font-bold text-slate-700 tracking-wide ${isRtl ? "mr-1" : "ml-1"}`}
-            >
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-bold text-slate-700 tracking-wide px-1">
               {t("signup.email_label")}
             </label>
             <input
               type="email"
               placeholder="name@example.com"
-              className={`border border-slate-200 rounded-xl p-3.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-slate-400 bg-slate-50/30 ${isRtl ? "text-right" : "text-left"}`}
+              className="border border-slate-200 rounded-xl p-3.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-slate-400 bg-slate-50/30"
               id="email"
               onChange={handleChange}
               required
@@ -105,28 +100,24 @@ function SignUp() {
           </div>
 
           {/* حقل كلمة المرور */}
-          <div
-            className={`flex flex-col gap-1.5 mb-2 ${isRtl ? "text-right" : "text-left"}`}
-          >
-            <label
-              className={`text-xs font-bold text-slate-700 tracking-wide ${isRtl ? "mr-1" : "ml-1"}`}
-            >
+          <div className="flex flex-col gap-1.5 mb-2">
+            <label className="text-xs font-bold text-slate-700 tracking-wide px-1">
               {t("signup.password_label")}
             </label>
             <input
               type="password"
               placeholder="••••••••"
-              className={`border border-slate-200 rounded-xl p-3.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-slate-400 bg-slate-50/30 ${isRtl ? "text-right" : "text-left"}`}
+              className="border border-slate-200 rounded-xl p-3.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-slate-400 bg-slate-50/30"
               id="password"
               onChange={handleChange}
               required
             />
           </div>
 
-          {/* زر إنشاء الحساب الأساسي مع حالة التحميل */}
+          {/* زر إنشاء الحساب الأساسي */}
           <button
             disabled={loading}
-            className="bg-blue-600 text-white p-3.5 rounded-xl font-semibold uppercase hover:bg-blue-700 active:scale-[0.99] transition-all shadow-md shadow-blue-600/10 text-sm disabled:opacity-70 disabled:pointer-events-none mt-2 flex items-center justify-center gap-2"
+            className="bg-blue-600 text-white p-3.5 rounded-xl font-semibold uppercase hover:bg-blue-700 active:scale-[0.99] transition-all shadow-md shadow-blue-600/10 text-sm disabled:opacity-70 disabled:pointer-events-none mt-2 flex items-center justify-center gap-2 cursor-pointer"
           >
             {loading ? (
               <>
@@ -165,14 +156,12 @@ function SignUp() {
             <div className="flex-grow border-t border-slate-100"></div>
           </div>
 
-          {/* مكون جوجل الخارجي */}
+          {/* مكون تسجيل الدخول عن طريق جوجل */}
           <OAuth />
         </form>
 
-        {/* روابط الانتقال إذا كان لديه حساب بالفعل */}
-        <div
-          className={`flex items-center justify-center gap-1.5 mt-2 text-sm font-medium border-t border-slate-100/80 pt-5 ${isRtl ? "flex-row-reverse" : ""}`}
-        >
+        {/* روابط الانتقال إذا كان يملك حساباً بالفعل */}
+        <div className="flex items-center justify-center gap-1.5 mt-2 text-sm font-medium border-t border-slate-100/80 pt-5">
           <p className="text-slate-500">{t("signup.already_have_account")}</p>
           <Link to={"/sign-in"}>
             <span className="text-blue-600 hover:text-blue-700 hover:underline transition-colors font-semibold">
@@ -181,9 +170,9 @@ function SignUp() {
           </Link>
         </div>
 
-        {/* صندوق عرض الأخطاء المخصص */}
+        {/* عرض الأخطاء */}
         {error && (
-          <div className="bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-xl text-xs font-medium text-center mt-1">
+          <div className="bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-xl text-xs font-medium text-center mt-1 animate-shake">
             {error}
           </div>
         )}
