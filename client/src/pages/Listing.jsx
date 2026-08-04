@@ -120,6 +120,23 @@ export default function Listing() {
         <div>
           {/* حاوية السلايدر */}
           <div className="relative w-full group">
+            {/* أزرار التنقل المخصصة بالسلايدر - يجب أن تُركّب قبل Swiper حتى تكون الـ refs جاهزة عند تهيئته */}
+            <button
+              ref={prevRef}
+              aria-label="Previous Slide"
+              className="absolute start-4 sm:start-8 top-1/2 -translate-y-1/2 z-30 bg-white hover:bg-slate-50 text-slate-800 w-11 h-11 rounded-full flex justify-center items-center shadow-lg transition-all duration-200 hover:scale-105 border border-slate-100 disabled:opacity-40"
+            >
+              <FaChevronLeft className="text-base font-bold rtl:rotate-180" />
+            </button>
+
+            <button
+              ref={nextRef}
+              aria-label="Next Slide"
+              className="absolute end-4 sm:end-8 top-1/2 -translate-y-1/2 z-30 bg-white hover:bg-slate-50 text-slate-800 w-11 h-11 rounded-full flex justify-center items-center shadow-lg transition-all duration-200 hover:scale-105 border border-slate-100 disabled:opacity-40"
+            >
+              <FaChevronRight className="text-base font-bold rtl:rotate-180" />
+            </button>
+
             <Swiper
               modules={[Navigation, Autoplay]}
               key={i18n.language}
@@ -146,23 +163,6 @@ export default function Listing() {
                 </SwiperSlide>
               ))}
             </Swiper>
-
-            {/* أزرار التنقل المخصصة بالسلايدر */}
-            <button
-              ref={prevRef}
-              aria-label="Previous Slide"
-              className="absolute start-4 sm:start-8 top-1/2 -translate-y-1/2 z-30 bg-white hover:bg-slate-50 text-slate-800 w-11 h-11 rounded-full flex justify-center items-center shadow-lg transition-all duration-200 hover:scale-105 border border-slate-100 disabled:opacity-40"
-            >
-              <FaChevronLeft className="text-base font-bold rtl:rotate-180" />
-            </button>
-
-            <button
-              ref={nextRef}
-              aria-label="Next Slide"
-              className="absolute end-4 sm:end-8 top-1/2 -translate-y-1/2 z-30 bg-white hover:bg-slate-50 text-slate-800 w-11 h-11 rounded-full flex justify-center items-center shadow-lg transition-all duration-200 hover:scale-105 border border-slate-100 disabled:opacity-40"
-            >
-              <FaChevronRight className="text-base font-bold rtl:rotate-180" />
-            </button>
           </div>
 
           {/* زر المشاركة */}

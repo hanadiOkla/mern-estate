@@ -3,6 +3,7 @@ import { errorHandler } from "../utils/error.js";
 import OpenAI from "openai";
 import dotenv from "dotenv";
 import User from '../models/user.model.js';
+import mongoose from 'mongoose';
 
 dotenv.config();
 
@@ -192,6 +193,90 @@ export const getUserListings = async (req, res, next) => {
   }
 };
 
+
+// 1. جلب جميع المستخدمين (بدون كلمات السر)
+export const getUsers = async (req, res, next) => {
+  try {
+    const users = await User.find({}, '-password').sort({ createdAt: -1 });
+    res.status(200).json(users);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// 2. ترقية أو سحب صلاحية الأدمن مع حماية Transaction ضد الـ Race Condition
+export const toggleAdminRole = async (req, res, next) => {
+  // بدء جلسة الترانزاكشن
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const userIdToUpdate = req.params.id;
+
+    // حماية 1: منع الأدمن من تعديل صلاحية نفسه
+    if (req.user.id === userIdToUpdate) {
+      await session.abortTransaction();
+      session.endSession();
+      return next(errorHandler(400, 'لا يمكنك تعديل صلاحية الأدمن الخاصة بك بنفسك'));
+    }
+
+    // جلب بيانات المستخدم المراد تعديل صلاحيته داخل الجلسة
+    const userToUpdate = await User.findById(userIdToUpdate).session(session);
+    if (!userToUpdate) {
+      await session.abortTransaction();
+      session.endSession();
+      return next(errorHandler(404, 'المستخدم غير موجود'));
+    }
+
+    const isCurrentlyAdmin = userToUpdate.isAdmin || userToUpdate.role === 'admin';
+
+    // حماية 2: في حال كان الطلب هو "سحب صلاحية أدمن"
+    if (isCurrentlyAdmin) {
+      // حساب عدد الأدمنز المتبقين في النظام (استثناء المستخدم الحالي)
+      const remainingAdminsCount = await User.countDocuments({
+        _id: { $ne: userToUpdate._id },
+        $or: [{ isAdmin: true }, { role: 'admin' }]
+      }).session(session);
+
+      // إذا لم يتبقَ أي أدمن آخر، نرفض العملية ونلغي الترانزاكشن
+      if (remainingAdminsCount === 0) {
+        await session.abortTransaction();
+        session.endSession();
+        return next(
+          errorHandler(
+            400,
+            'لا يمكن إلغاء صلاحية هذا الأدمن! يجب أن يتبقى أدمن نشط واحد على الأقل في المنصة.'
+          )
+        );
+      }
+    }
+
+    // تطبيق التغيير وتحديث الحقلين لضمان التوافق التام
+    const newAdminState = !isCurrentlyAdmin;
+    userToUpdate.isAdmin = newAdminState;
+    userToUpdate.role = newAdminState ? 'admin' : 'user';
+
+    // حفظ التغييرات داخل الجلسة
+    await userToUpdate.save({ session });
+
+    // تثبيت العمليات بنجاح في قاعدة البيانات
+    await session.commitTransaction();
+    session.endSession();
+
+    return res.status(200).json({
+      success: true,
+      message: `تم ${newAdminState ? 'منح' : 'إلغاء'} صلاحية الأدمن بنجاح`,
+      isAdmin: newAdminState,
+      role: userToUpdate.role,
+    });
+
+  } catch (error) {
+    // التراجع الفوري عن أي تغيير في حال حدوث خطأ غير متوقع
+    await session.abortTransaction();
+    session.endSession();
+    next(error);
+  }
+};
 
 
 // --- AI Features Controllers ---

@@ -10,53 +10,8 @@ import { useSelector } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import toast, { Toaster } from "react-hot-toast";
+import { API_BASE_URL } from "../config";
 
-// ----------------------------------------------------------------------
-// Skeleton Loader Component (يظهر أثناء جلب البيانات الأولية)
-// ----------------------------------------------------------------------
-const ListingFormSkeleton = ({ isRtl }) => (
-  <div className="bg-slate-50/50 min-h-screen py-10 px-4">
-    <div className="max-w-6xl mx-auto bg-white rounded-3xl p-6 md:p-8 shadow-xl border border-slate-100 animate-pulse">
-      <div className="flex flex-col items-center mb-8 gap-3">
-        <div className="h-6 w-32 bg-slate-200 rounded-full"></div>
-        <div className="h-8 w-64 bg-slate-200 rounded-xl"></div>
-        <div className="h-4 w-48 bg-slate-200 rounded-lg"></div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <div className="lg:col-span-7 flex flex-col gap-6">
-          <div className="bg-slate-100 p-6 rounded-3xl flex flex-col gap-4">
-            <div className="h-6 w-1/3 bg-slate-200 rounded-lg"></div>
-            <div className="h-12 w-full bg-slate-200 rounded-xl"></div>
-            <div className="h-12 w-full bg-slate-200 rounded-xl"></div>
-            <div className="h-28 w-full bg-slate-200 rounded-xl"></div>
-          </div>
-          <div className="bg-slate-100 p-6 rounded-3xl flex flex-col gap-4">
-            <div className="h-6 w-1/3 bg-slate-200 rounded-lg"></div>
-            <div className="grid grid-cols-3 gap-3">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="h-10 bg-slate-200 rounded-xl"></div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <div className="lg:col-span-5 flex flex-col gap-6">
-          <div className="bg-slate-100 p-6 rounded-3xl flex flex-col gap-4">
-            <div className="h-6 w-1/3 bg-slate-200 rounded-lg"></div>
-            <div className="h-12 w-full bg-slate-200 rounded-xl"></div>
-            <div className="h-32 w-full bg-slate-200 rounded-2xl"></div>
-            <div className="h-12 w-full bg-slate-200 rounded-xl"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-);
-
-// ----------------------------------------------------------------------
-// Main Component
-// ----------------------------------------------------------------------
 export default function UpdateListing() {
   const { t, i18n } = useTranslation();
   const isRtl = i18n.language === "ar";
@@ -85,10 +40,8 @@ export default function UpdateListing() {
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // AI Description Generation State
+  // AI States
   const [aiLoading, setAiLoading] = useState(false);
-
-  // AI Valuation States
   const [valLoading, setValLoading] = useState(false);
   const [valuation, setValuation] = useState(null);
 
@@ -98,25 +51,49 @@ export default function UpdateListing() {
 
   // Fetch Listing Data
   useEffect(() => {
+    let isMounted = true;
+
     const fetchListing = async () => {
       try {
         setPageLoading(true);
         const listingId = params.listingId;
-        const res = await fetch(`/api/listing/get/${listingId}`);
-        const data = await res.json();
-        if (data.success === false) {
-          toast.error(data.message || t("listing.fetch_error"));
+
+        if (!listingId) {
+          toast.error("معرف العقار غير موجود");
           return;
         }
-        setFormData(data);
+
+        const res = await fetch(`${API_BASE_URL}/api/listing/get/${listingId}`, {
+          credentials: "include",
+        });
+        const data = await res.json();
+
+        if (!res.ok || data.success === false) {
+          toast.error(data?.message || t("listing.fetch_error"));
+          return;
+        }
+
+        if (isMounted) {
+          setFormData(data);
+        }
       } catch (err) {
-        toast.error(err.message || t("listing.fetch_error"));
+        toast.error(
+          !navigator.onLine
+            ? "أنت غير متصل بالإنترنت حالياً 📡"
+            : err.message || t("listing.fetch_error")
+        );
       } finally {
-        setPageLoading(false);
+        if (isMounted) {
+          setPageLoading(false);
+        }
       }
     };
 
     fetchListing();
+
+    return () => {
+      isMounted = false;
+    };
   }, [params.listingId, t]);
 
   const handleImageSubmit = () => {
@@ -136,9 +113,10 @@ export default function UpdateListing() {
           }));
           setUploading(false);
           setFiles([]);
-          toast.success(t("listing.images_upload_success") || "تم رفع الصور بنجاح!", {
-            id: toastId,
-          });
+          toast.success(
+            t("listing.images_upload_success") || "تم رفع الصور بنجاح!",
+            { id: toastId }
+          );
         })
         .catch(() => {
           toast.error(t("listing.media_err_max_size"), { id: toastId });
@@ -188,7 +166,9 @@ export default function UpdateListing() {
       }));
       setShowModal(false);
       setImageToDelete(null);
-      toast.success(t("listing.image_deleted_success") || "تم حذف الصورة بنجاح");
+      toast.success(
+        t("listing.image_deleted_success") || "تم حذف الصورة بنجاح"
+      );
     }
   };
 
@@ -202,9 +182,10 @@ export default function UpdateListing() {
     try {
       setAiLoading(true);
 
-      const res = await fetch("/api/ai/generate-description", {
+      const res = await fetch(`${API_BASE_URL}/api/listing/generate-ai`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           name: formData.name,
           address: formData.address,
@@ -229,9 +210,10 @@ export default function UpdateListing() {
         ...prev,
         description: data.description,
       }));
-      toast.success(t("listing.ai_desc_success") || "تم توليد الوصف بالذكاء الاصطناعي! ✨", {
-        id: toastId,
-      });
+      toast.success(
+        t("listing.ai_desc_success") || "تم توليد الوصف بالذكاء الاصطناعي! ✨",
+        { id: toastId }
+      );
     } catch (err) {
       toast.error(err.message, { id: toastId });
     } finally {
@@ -249,9 +231,10 @@ export default function UpdateListing() {
     try {
       setValLoading(true);
 
-      const res = await fetch("/api/ai/valuation", {
+      const res = await fetch(`${API_BASE_URL}/api/listing/evaluate-ai`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           address: formData.address,
           bedrooms: formData.bedrooms,
@@ -270,9 +253,10 @@ export default function UpdateListing() {
       }
 
       setValuation(data.valuation);
-      toast.success(t("listing.ai_val_success") || "تم حساب التقييم العقاري بنجاح!", {
-        id: toastId,
-      });
+      toast.success(
+        t("listing.ai_val_success") || "تم حساب التقييم العقاري بنجاح!",
+        { id: toastId }
+      );
     } catch (err) {
       toast.error(err.message, { id: toastId });
     } finally {
@@ -322,11 +306,12 @@ export default function UpdateListing() {
       setLoading(true);
       const toastId = toast.loading(t("listing.submit_loading"));
 
-      const res = await fetch(`/api/listing/update/${params.listingId}`, {
+      const res = await fetch(`${API_BASE_URL}/api/listing/update/${params.listingId}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include",
         body: JSON.stringify({
           ...formData,
           userRef: currentUser._id,
@@ -351,12 +336,42 @@ export default function UpdateListing() {
     }
   };
 
-  // عرض الـ Skeleton عند التحميل الأولي
-  if (pageLoading) return <ListingFormSkeleton isRtl={isRtl} />;
+  // ✅ عرض الـ Skeleton بشكل مباشر لتفادي مشكلة الـ Hook Dispatcher
+  if (pageLoading) {
+    return (
+      <div className="bg-slate-50/50 min-h-screen py-10 px-4">
+        <div className="max-w-6xl mx-auto bg-white rounded-3xl p-6 md:p-8 shadow-xl border border-slate-100 animate-pulse">
+          <div className="flex flex-col items-center mb-8 gap-3">
+            <div className="h-6 w-32 bg-slate-200 rounded-full"></div>
+            <div className="h-8 w-64 bg-slate-200 rounded-xl"></div>
+            <div className="h-4 w-48 bg-slate-200 rounded-lg"></div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <div className="lg:col-span-7 flex flex-col gap-6">
+              <div className="bg-slate-100 p-6 rounded-3xl flex flex-col gap-4">
+                <div className="h-6 w-1/3 bg-slate-200 rounded-lg"></div>
+                <div className="h-12 w-full bg-slate-200 rounded-xl"></div>
+                <div className="h-12 w-full bg-slate-200 rounded-xl"></div>
+                <div className="h-28 w-full bg-slate-200 rounded-xl"></div>
+              </div>
+            </div>
+
+            <div className="lg:col-span-5 flex flex-col gap-6">
+              <div className="bg-slate-100 p-6 rounded-3xl flex flex-col gap-4">
+                <div className="h-6 w-1/3 bg-slate-200 rounded-lg"></div>
+                <div className="h-12 w-full bg-slate-200 rounded-xl"></div>
+                <div className="h-32 w-full bg-slate-200 rounded-2xl"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-slate-50/50 min-h-screen py-10 px-4 transition-colors duration-300">
-      {/* Toast Notifications Provider */}
       <Toaster
         position={isRtl ? "bottom-left" : "bottom-right"}
         toastOptions={{ duration: 4000 }}
@@ -379,7 +394,7 @@ export default function UpdateListing() {
           onSubmit={handleSubmit}
           className="grid grid-cols-1 lg:grid-cols-12 gap-8"
         >
-          {/* Left Column: Form Controls & Inputs */}
+          {/* Left Column */}
           <div className="lg:col-span-7 flex flex-col gap-6">
             <div className="bg-white p-6 md:p-8 rounded-3xl shadow-xl shadow-slate-200/40 border border-slate-100 flex flex-col gap-5">
               <h2
@@ -447,7 +462,7 @@ export default function UpdateListing() {
                 />
               </div>
 
-              {/* Description Field with AI Generation Option */}
+              {/* Description */}
               <div className="flex flex-col gap-2">
                 <div
                   className={`flex justify-between items-center ${
@@ -487,7 +502,7 @@ export default function UpdateListing() {
               </div>
             </div>
 
-            {/* Checkboxes Options Group */}
+            {/* Checkboxes Group */}
             <div className="bg-white p-6 md:p-8 rounded-3xl shadow-xl shadow-slate-200/40 border border-slate-100 flex flex-col gap-5">
               <h2
                 className={`text-lg font-bold text-slate-800 border-b border-slate-100 pb-3 flex items-center gap-2 ${
@@ -598,7 +613,7 @@ export default function UpdateListing() {
               </div>
             </div>
 
-            {/* Price and Specifications Group */}
+            {/* Price and Specs */}
             <div className="bg-white p-6 md:p-8 rounded-3xl shadow-xl shadow-slate-200/40 border border-slate-100 flex flex-col gap-5">
               <h2
                 className={`text-lg font-bold text-slate-800 border-b border-slate-100 pb-3 flex items-center gap-2 ${
@@ -715,7 +730,7 @@ export default function UpdateListing() {
                 )}
               </div>
 
-              {/* AI Valuation Interactive Section Component */}
+              {/* AI Valuation Section */}
               <div
                 className="bg-slate-50 p-5 rounded-2xl border border-slate-200 shadow-sm mt-3"
                 dir={isRtl ? "rtl" : "ltr"}
@@ -812,7 +827,7 @@ export default function UpdateListing() {
             </div>
           </div>
 
-          {/* Right Column: Media Upload */}
+          {/* Right Column: Media */}
           <div className="lg:col-span-5 flex flex-col gap-6">
             <div className="bg-white p-6 md:p-8 rounded-3xl shadow-xl shadow-slate-200/40 border border-slate-100 flex flex-col gap-5">
               <h2
@@ -866,7 +881,7 @@ export default function UpdateListing() {
                 </div>
               </div>
 
-              {/* Uploaded Images Preview Grid */}
+              {/* Uploaded Images */}
               {formData.imageUrls.length > 0 && (
                 <div className="grid grid-cols-1 gap-2.5 bg-slate-50/50 p-3 rounded-2xl border border-slate-100 max-h-[320px] overflow-y-auto">
                   {formData.imageUrls.map((url, index) => (
@@ -919,7 +934,7 @@ export default function UpdateListing() {
         </form>
       </main>
 
-      {/* Confirmation Modal Container */}
+      {/* Confirmation Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-fade-in">
           <div className="bg-white rounded-2xl max-w-md w-full shadow-xl border border-slate-100 overflow-hidden transform scale-100 transition-all duration-300">

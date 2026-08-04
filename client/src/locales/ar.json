@@ -274,16 +274,31 @@
     "termsOfService": "شروط الخدمة"
   },
   "admin": {
-    "dashboard_title": "لوحة التحكم - مراجعة العقارات",
-    "dashboard_nav": "لوحة التحكم",
+    "dashboard_nav": "لوحة التحكم الرئيسية",
+    "pending_listings_tab": "الإعلانات المعلقة",
+    "users_tab": "إدارة المستخدمين",
     "loading": "جاري تحميل العقارات المعلقة...",
     "no_pending": "لا توجد عقارات معلقة بانتظار المراجعة حالياً...",
     "preview": "معاينة",
     "approve": "موافقة",
     "reject": "رفض",
-    "approval_success": "تم تحديث حالة العقار بنجاح!",
-    "approved_by_label": "تمت المراجعة والموافقة بواسطة:",
-    "approved_at_label": "تاريخ الموافقة:",
-    "per_month": "/ شهرياً"
+    "per_month": "/ شهرياً",
+    "loading_users": "جاري تحميل المستخدمين...",
+    "loading_error": "حدث خطأ أثناء جلب البيانات",
+    "network_error": "تعذر الاتصال بالسيرفر",
+    "error_updating": "حدث خطأ أثناء تغيير الصلاحية",
+    "user": "المستخدم",
+    "email": "البريد الإلكتروني",
+    "role": "الدور الحالي",
+    "actions": "الإجراءات",
+    "role_admin": "الأدمن",
+    "role_user": "مستخدم عادي",
+    "promote_admin": "ترقية لأدمن",
+    "demote_admin": "إلغاء الأدمن",
+    "confirm_role_change": "تأكيد تغيير الصلاحية",
+    "confirm_promote_msg": "هل أنتِ تأكدتِ من ترقية المستخدم \"{{username}}\" إلى أدمن؟",
+    "confirm_demote_msg": "هل أنتِ تأكدتِ من إلغاء صلاحية الأدمن عن المستخدم \"{{username}}\"؟",
+    "cancel": "إلغاء",
+    "confirm_action": "تأكيد العملية"
   }
 }

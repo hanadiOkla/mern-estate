@@ -266,16 +266,31 @@
     "termsOfService": "Terms of Service"
   },
   "admin": {
-    "dashboard_title": "Admin Dashboard - Review Listings",
     "dashboard_nav": "Admin Dashboard",
+    "pending_listings_tab": "Pending Listings",
+    "users_tab": "User Management",
     "loading": "Loading pending listings...",
-    "no_pending": "No pending listings waiting for review currently...",
+    "no_pending": "No pending listings to review currently...",
     "preview": "Preview",
     "approve": "Approve",
     "reject": "Reject",
-    "approval_success": "Listing status updated successfully!",
-    "approved_by_label": "Reviewed and approved by:",
-    "approved_at_label": "Approved date:",
-    "per_month": "/ month"
+    "per_month": "/ month",
+    "loading_users": "Loading users...",
+    "loading_error": "Error fetching data",
+    "network_error": "Network connection error",
+    "error_updating": "Error updating user role",
+    "user": "User",
+    "email": "Email",
+    "role": "Current Role",
+    "actions": "Actions",
+    "role_admin": "Admin",
+    "role_user": "Standard User",
+    "promote_admin": "Promote to Admin",
+    "demote_admin": "Revoke Admin",
+    "confirm_role_change": "Confirm Role Change",
+    "confirm_promote_msg": "Are you sure you want to promote user \"{{username}}\" to admin?",
+    "confirm_demote_msg": "Are you sure you want to remove admin privileges from \"{{username}}\"?",
+    "cancel": "Cancel",
+    "confirm_action": "Confirm"
   }
 }

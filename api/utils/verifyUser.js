@@ -1,12 +1,9 @@
 import { errorHandler } from "./error.js";
 import jwt from 'jsonwebtoken';
+import User from '../models/user.model.js';
 
 export const verifyToken = (req, res, next) => {
-    // التركيز على الكوكي فقط لضمان اتساق العمل
     const token = req.cookies.access_token;
-    
-    // إزالة الـ console.log لاحقاً قبل الرفع للإنتاج (Production)
-    console.log("Access Token Found in Middleware:", token ? "Yes" : "No");
 
     if (!token) {
         return next(errorHandler(401, 'Unauthorized: No token provided'));
@@ -22,14 +19,28 @@ export const verifyToken = (req, res, next) => {
     });
 };
 
-export const verifyAdmin = (req, res, next) => {
-    if (!req.user) {
-        return next(errorHandler(401, 'Unauthorized: Please log in first'));
-    }
+export const verifyAdmin = async (req, res, next) => {
+    try {
+        if (!req.user || !req.user.id) {
+            return next(errorHandler(401, 'Unauthorized: Please log in first'));
+        }
 
-    if (req.user.role !== 'admin') {
-        return next(errorHandler(403, 'Forbidden: Admin access required'));
-    }
+        // الاستعلام اللحظي المباشر من قاعدة البيانات
+        const currentUser = await User.findById(req.user.id);
 
-    next();
+        if (!currentUser) {
+            return next(errorHandler(404, 'User not found'));
+        }
+
+        const isAdmin = currentUser.role === 'admin' || currentUser.isAdmin === true;
+
+        if (!isAdmin) {
+            return next(errorHandler(403, 'Forbidden: Admin access required'));
+        }
+
+        req.currentUser = currentUser;
+        next();
+    } catch (error) {
+        next(error);
+    }
 };
