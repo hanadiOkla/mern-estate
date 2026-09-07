@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Header from "./components/Header";
 import PrivateRoute from "./components/PrivateRoute";
-import AdminPrivateRoute from "./components/AdminPrivateRoute";
+import AdminPrivateRoute from "./components/admin/AdminPrivateRoute";
 import Footer from "./components/Footer";
 import Home from "./pages/Home";
 import SignIn from "./pages/SignIn";

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   getDownloadURL,
   getStorage,
@@ -10,26 +10,30 @@ import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { API_BASE_URL } from "../config";
+import DynamicAttributes from "../components/DynamicAttributes";
 
 export default function CreateListing() {
   const { currentUser } = useSelector((state) => state.user);
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
+  const fileInputRef = useRef(null);
 
   const [files, setFiles] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState(null);
+
   const [formData, setFormData] = useState({
     imageUrls: [],
     name: "",
     description: "",
     address: "",
-    type: "rent",
-    bedrooms: 1,
-    bathrooms: 1,
+    type: "sale", // القيمة الافتراضية للبيع
     regularPrice: 50,
     discountPrice: 0,
     offer: false,
     parking: false,
-    furnished: false,
+    category: "",
+    attributesMap: {},
   });
 
   const [imageUploadError, setImageUploadError] = useState(false);
@@ -37,16 +41,49 @@ export default function CreateListing() {
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // AI Description Generation States
+  // AI States
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState(null);
-
-  // AI Valuation States
   const [valLoading, setValLoading] = useState(false);
   const [valError, setValError] = useState(null);
   const [valuation, setValuation] = useState(null);
 
-  const handleImageSubmit = (e) => {
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/categories`);
+        const data = await res.json();
+        if (res.ok) {
+          setCategories(data);
+        }
+      } catch (err) {
+        console.error("Error fetching categories:", err);
+      }
+    };
+    fetchCategories();
+  }, []);
+
+  const handleCategoryChange = (e) => {
+    const catId = e.target.value;
+    const catObj = categories.find((c) => c._id === catId);
+    setSelectedCategory(catObj || null);
+    setFormData((prev) => ({
+      ...prev,
+      category: catId,
+      attributesMap: {}, // تفريغ الخصائص السابقة عند تغيير الفئة
+    }));
+  };
+
+  const isRealEstate = Boolean(
+    selectedCategory &&
+      (selectedCategory.slug === "real-estate" ||
+        selectedCategory.slug === "realestate" ||
+        selectedCategory.name?.en?.toLowerCase() === "real estate" ||
+        selectedCategory.name?.ar === "عقارات" ||
+        selectedCategory.name?.ar === "عقار")
+  );
+
+  const handleImageSubmit = () => {
     if (files.length > 0 && files.length + formData.imageUrls.length < 7) {
       setUploading(true);
       setImageUploadError(false);
@@ -63,13 +100,15 @@ export default function CreateListing() {
           });
           setImageUploadError(false);
           setUploading(false);
+          setFiles([]);
+          if (fileInputRef.current) fileInputRef.current.value = "";
         })
-        .catch((err) => {
-          setImageUploadError("Image upload failed (2 mb max per image)");
+        .catch(() => {
+          setImageUploadError("فشل رفع الصور (2 ميجابايت أقصى حد لكل صورة)");
           setUploading(false);
         });
     } else {
-      setImageUploadError("You can only upload 6 images per listing");
+      setImageUploadError("يمكنك رفع 6 صور كحد أقصى لكل إعلان");
       setUploading(false);
     }
   };
@@ -87,9 +126,7 @@ export default function CreateListing() {
             (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
           console.log(`Upload is ${progress}% done`);
         },
-        (error) => {
-          reject(error);
-        },
+        (error) => reject(error),
         () => {
           getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
             resolve(downloadURL);
@@ -107,34 +144,30 @@ export default function CreateListing() {
   };
 
   const handleChange = (e) => {
-    if (e.target.id === "sale" || e.target.id === "rent") {
-      setFormData({
-        ...formData,
-        type: e.target.id,
-      });
+    const { id, type, value, checked } = e.target;
+
+    if (id === "sale" || id === "rent") {
+      setFormData((prev) => ({ ...prev, type: id }));
+      return;
     }
 
-    if (
-      e.target.id === "parking" ||
-      e.target.id === "furnished" ||
-      e.target.id === "offer"
-    ) {
-      setFormData({
-        ...formData,
-        [e.target.id]: e.target.checked,
-      });
+    if (type === "checkbox") {
+      setFormData((prev) => ({ ...prev, [id]: checked }));
+      return;
     }
 
-    if (
-      e.target.type === "number" ||
-      e.target.type === "text" ||
-      e.target.type === "textarea"
-    ) {
-      setFormData({
-        ...formData,
-        [e.target.id]: e.target.value,
-      });
+    if (type === "number") {
+      setFormData((prev) => ({
+        ...prev,
+        [id]: value === "" ? "" : Number(value),
+      }));
+      return;
     }
+
+    setFormData((prev) => ({
+      ...prev,
+      [id]: value,
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -169,10 +202,9 @@ export default function CreateListing() {
     }
   };
 
-  // Handles AI smart description generation
   const handleGenerateAI = async () => {
     try {
-      if (!formData.name || !formData.address || !formData.type) {
+      if (!formData.name?.trim() || !formData.address?.trim()) {
         setAiError(t("ai_error_fields"));
         return;
       }
@@ -197,10 +229,10 @@ export default function CreateListing() {
         return;
       }
 
-      setFormData({
-        ...formData,
+      setFormData((prev) => ({
+        ...prev,
         description: data.description,
-      });
+      }));
 
       setAiLoading(false);
     } catch (error) {
@@ -209,12 +241,12 @@ export default function CreateListing() {
     }
   };
 
-  // Handles AI property valuation request
   const handleAIValuation = async (e) => {
     e.preventDefault();
 
-    if (!formData.address || !formData.type) {
-      setValError(t("ai_val_error_fields"));
+    // التحقق المحدث لحث المستخدم على تعبئة الحقول الأساسية قبل التقييم
+    if (!formData.name?.trim() || !formData.address?.trim() || !formData.category) {
+      setValError("⚠️ يرجى ملء كافة المعلومات المطلوبة لكي يتمكن الذكاء الاصطناعي من تحليل القيمة السوقية بدقة.");
       return;
     }
 
@@ -248,10 +280,11 @@ export default function CreateListing() {
     }
   };
 
+  const currentLang = i18n?.language?.startsWith("ar") ? "ar" : "en";
+
   return (
     <div className="bg-slate-50/50 min-h-screen py-12 px-4 md:px-8">
       <main className="max-w-6xl mx-auto flex flex-col gap-8">
-        {/* Main Header */}
         <div>
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
             {t("create_title")}
@@ -263,7 +296,7 @@ export default function CreateListing() {
           onSubmit={handleSubmit}
           className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start"
         >
-          {/* Left Column: Property Details & Options */}
+          {/* الجانب الأيمن */}
           <div className="lg:col-span-7 bg-white p-6 md:p-8 rounded-3xl shadow-xl shadow-slate-200/40 border border-slate-100 flex flex-col gap-5">
             <h2 className="text-lg font-bold text-slate-800 border-b border-slate-100 pb-3 flex items-center gap-2">
               <svg
@@ -282,8 +315,33 @@ export default function CreateListing() {
               {t("property_info")}
             </h2>
 
+            {/* اختيار الفئة */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-bold text-slate-700 tracking-wide ltr:ml-1 rtl:mr-1">
+              <label className="text-xs font-bold text-slate-700 tracking-wide">
+                {currentLang === "ar" ? "التصنيف" : "Category"}
+              </label>
+              <select
+                id="category"
+                value={formData.category}
+                onChange={handleCategoryChange}
+                required
+                className="border border-slate-200 rounded-xl p-3.5 text-sm focus:outline-none focus:border-blue-500 transition-all bg-slate-50/20 text-slate-700 font-medium"
+              >
+                <option value="">
+                  {currentLang === "ar"
+                    ? "-- اختر التصنيف --"
+                    : "-- Select Category --"}
+                </option>
+                {categories.map((cat, idx) => (
+                  <option key={cat._id || cat.id || `cat_${idx}`} value={cat._id}>
+                    {cat.name?.[currentLang] || cat.name?.ar || cat.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold text-slate-700 tracking-wide">
                 {t("property_title_label")}
               </label>
               <input
@@ -301,7 +359,7 @@ export default function CreateListing() {
 
             <div className="flex flex-col gap-1.5">
               <div className="flex justify-between items-center flex-wrap gap-2">
-                <label className="text-xs font-bold text-slate-700 tracking-wide ltr:ml-1 rtl:mr-1">
+                <label className="text-xs font-bold text-slate-700 tracking-wide">
                   {t("description_label")}
                 </label>
                 <button
@@ -329,7 +387,7 @@ export default function CreateListing() {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-bold text-slate-700 tracking-wide ltr:ml-1 rtl:mr-1">
+              <label className="text-xs font-bold text-slate-700 tracking-wide">
                 {t("address_label")}
               </label>
               <input
@@ -343,12 +401,22 @@ export default function CreateListing() {
               />
             </div>
 
-            {/* Amenities & Checkboxes */}
+            {/* خصائص التصنيف الديناميكية */}
+            {selectedCategory && (
+              <DynamicAttributes
+                mode="form"
+                attributes={selectedCategory.attributes}
+                formData={formData}
+                setFormData={setFormData}
+              />
+            )}
+
+            {/* خيارات الميزات: تظهر دائماً للبيع والتأجير */}
             <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100 mt-2">
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 ltr:ml-1 rtl:mr-1">
-                {t("amenities_options")}
+              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">
+                {currentLang === "ar" ? "الميزات والخيارات" : "Options & Features"}
               </p>
-              <div className="flex gap-5 flex-wrap">
+              <div className="flex gap-3 flex-wrap">
                 <label className="flex items-center gap-2.5 bg-white px-4 py-2.5 rounded-xl border border-slate-200 cursor-pointer hover:border-blue-300 transition-colors shadow-sm select-none">
                   <input
                     type="checkbox"
@@ -375,31 +443,20 @@ export default function CreateListing() {
                   </span>
                 </label>
 
-                <label className="flex items-center gap-2.5 bg-white px-4 py-2.5 rounded-xl border border-slate-200 cursor-pointer hover:border-blue-300 transition-colors shadow-sm select-none">
-                  <input
-                    type="checkbox"
-                    id="parking"
-                    className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300"
-                    onChange={handleChange}
-                    checked={formData.parking}
-                  />
-                  <span className="text-sm font-medium text-slate-700">
-                    {t("opt_parking")}
-                  </span>
-                </label>
-
-                <label className="flex items-center gap-2.5 bg-white px-4 py-2.5 rounded-xl border border-slate-200 cursor-pointer hover:border-blue-300 transition-colors shadow-sm select-none">
-                  <input
-                    type="checkbox"
-                    id="furnished"
-                    className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300"
-                    onChange={handleChange}
-                    checked={formData.furnished}
-                  />
-                  <span className="text-sm font-medium text-slate-700">
-                    {t("opt_furnished")}
-                  </span>
-                </label>
+                {isRealEstate && (
+                  <label className="flex items-center gap-2.5 bg-white px-4 py-2.5 rounded-xl border border-slate-200 cursor-pointer hover:border-blue-300 transition-colors shadow-sm select-none">
+                    <input
+                      type="checkbox"
+                      id="parking"
+                      className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300"
+                      onChange={handleChange}
+                      checked={formData.parking}
+                    />
+                    <span className="text-sm font-medium text-slate-700">
+                      {t("opt_parking")}
+                    </span>
+                  </label>
+                )}
 
                 <label className="flex items-center gap-2.5 bg-white px-4 py-2.5 rounded-xl border border-slate-200 cursor-pointer hover:border-blue-300 transition-colors shadow-sm select-none">
                   <input
@@ -416,42 +473,10 @@ export default function CreateListing() {
               </div>
             </div>
 
-            {/* Numeric Fields */}
-            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4 mt-2">
+            {/* الأسعار */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-1">
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold text-slate-600 ltr:ml-1 rtl:mr-1">
-                  {t("lbl_beds")}
-                </label>
-                <input
-                  type="number"
-                  id="bedrooms"
-                  min="1"
-                  max="10"
-                  required
-                  className="p-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 bg-slate-50/20 text-center font-semibold text-slate-700"
-                  onChange={handleChange}
-                  value={formData.bedrooms}
-                />
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold text-slate-600 ltr:ml-1 rtl:mr-1">
-                  {t("lbl_baths")}
-                </label>
-                <input
-                  type="number"
-                  id="bathrooms"
-                  min="1"
-                  max="10"
-                  required
-                  className="p-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 bg-slate-50/20 text-center font-semibold text-slate-700"
-                  onChange={handleChange}
-                  value={formData.bathrooms}
-                />
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold text-slate-600 ltr:ml-1 rtl:mr-1">
+                <label className="text-xs font-bold text-slate-600">
                   {t("lbl_regular_price")}{" "}
                   {formData.type === "rent" && (
                     <span className="text-slate-400 font-normal">
@@ -462,7 +487,7 @@ export default function CreateListing() {
                 <input
                   type="number"
                   id="regularPrice"
-                  min="50"
+                  min="1"
                   max="10000000"
                   required
                   className="p-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 bg-slate-50/20 text-center font-semibold text-slate-700"
@@ -473,7 +498,7 @@ export default function CreateListing() {
 
               {formData.offer && (
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-bold text-rose-600 ltr:ml-1 rtl:mr-1">
+                  <label className="text-xs font-bold text-rose-600">
                     {t("lbl_discount_price")}{" "}
                     {formData.type === "rent" && (
                       <span className="text-rose-400 font-normal">
@@ -495,13 +520,13 @@ export default function CreateListing() {
               )}
             </div>
 
-            {/* AI Valuation Section */}
+            {/* AI Evaluation Box */}
             <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 shadow-sm mt-3">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-2">
                 <div className="flex items-center gap-2">
                   <span className="text-xl">💡</span>
                   <h3 className="text-sm font-bold text-slate-800">
-                    {t("ai_val_box_title")}
+                    {t("listing.ai_val_box_title")}
                   </h3>
                 </div>
                 <button
@@ -569,7 +594,7 @@ export default function CreateListing() {
             </div>
           </div>
 
-          {/* Right Column: Media & Publish */}
+          {/* الجانب الأيسر: الصور */}
           <div className="lg:col-span-5 flex flex-col gap-6">
             <div className="bg-white p-6 md:p-8 rounded-3xl shadow-xl shadow-slate-200/40 border border-slate-100 flex flex-col gap-5">
               <h2 className="text-lg font-bold text-slate-800 border-b border-slate-100 pb-3 flex items-center gap-2">
@@ -599,8 +624,9 @@ export default function CreateListing() {
 
                 <div className="flex gap-3">
                   <input
+                    ref={fileInputRef}
                     onChange={(e) => setFiles(e.target.files)}
-                    className="p-2.5 border border-slate-200 rounded-xl w-full text-xs text-slate-500 bg-slate-50/50 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition-all cursor-pointer ltr:file:mr-4 rtl:file:ml-4"
+                    className="p-2.5 border border-slate-200 rounded-xl w-full text-xs text-slate-500 bg-slate-50/50 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition-all cursor-pointer"
                     type="file"
                     id="images"
                     accept="image/*"
@@ -622,12 +648,11 @@ export default function CreateListing() {
                 )}
               </div>
 
-              {/* Preview Grid */}
               {formData.imageUrls.length > 0 && (
                 <div className="grid grid-cols-1 gap-2.5 bg-slate-50/50 p-3 rounded-2xl border border-slate-100 max-h-[280px] overflow-y-auto">
                   {formData.imageUrls.map((url, index) => (
                     <div
-                      key={url}
+                      key={`${url}_${index}`}
                       className="flex justify-between p-2.5 bg-white border border-slate-100 items-center rounded-xl shadow-sm"
                     >
                       <div className="flex items-center gap-3 truncate">
@@ -656,6 +681,7 @@ export default function CreateListing() {
 
               <div className="flex flex-col gap-3 mt-2">
                 <button
+                  type="submit"
                   disabled={loading || uploading}
                   className="w-full bg-blue-600 text-white rounded-xl p-3.5 font-semibold uppercase hover:bg-blue-700 active:scale-[0.99] transition-all text-sm shadow-md shadow-blue-600/10 disabled:opacity-70"
                 >

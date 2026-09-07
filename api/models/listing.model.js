@@ -2,6 +2,16 @@ import mongoose from "mongoose";
 
 const listingSchema = new mongoose.Schema(
   {
+    category: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Category',
+      required: true,
+    },
+    attributesMap: {
+      type: Map,
+      of: mongoose.Schema.Types.Mixed,
+      default: {},
+    },
     name: {
       type: String,
       required: true,
@@ -20,31 +30,34 @@ const listingSchema = new mongoose.Schema(
     },
     discountPrice: {
       type: Number,
-      required: true,
+      default: 0, // 👈 جعلناه اختياري بقيمة افتراضية 0
     },
+
+    // 🟢 تم إزالة required: true عن حقول العقار حتى لا تعطل السيارات والأجهزة
     bathrooms: {
       type: Number,
-      required: true,
+      default: 0,
     },
     bedrooms: {
       type: Number,
-      required: true,
+      default: 0,
     },
     furnished: {
       type: Boolean,
-      required: true,
+      default: false,
     },
     parking: {
       type: Boolean,
-      required: true,
+      default: false,
     },
+
     type: {
       type: String,
-      required: true,
+      required: true, // rent / sale
     },
     offer: {
       type: Boolean,
-      required: true,
+      default: false,
     },
     imageUrls: {
       type: Array,
@@ -57,11 +70,11 @@ const listingSchema = new mongoose.Schema(
     status: {
       type: String,
       enum: ["pending_approval", "active", "rejected"],
-      default: "pending_approval", // الحالة الافتراضية لأي عقار جديد
+      default: "pending_approval",
     },
     approvedBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User", // ربط مباشر مع موديل المستخدم لجلب اسمه وصورته لاحقاً
+      ref: "User",
       default: null,
     },
     approvedAt: {
@@ -69,7 +82,7 @@ const listingSchema = new mongoose.Schema(
       default: null,
     },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 const Listing = mongoose.model("Listing", listingSchema);

@@ -7,7 +7,7 @@ export default function AdminSidebar({ activeTab, setActiveTab, pendingCount }) 
   const dropdownRef = useRef(null);
   const isRtl = i18n.dir() === 'rtl' || i18n.language?.startsWith('ar');
 
-  // مصفوفة الأقسام المتكاملة (جاهزة للتوسع لأي عدد من التبويبات)
+  // مصفوفة الأقسام المتكاملة
   const menuGroups = [
     {
       groupTitle: isRtl ? 'إدارة المنصة' : 'Management',
@@ -19,6 +19,15 @@ export default function AdminSidebar({ activeTab, setActiveTab, pendingCount }) 
           icon: (
             <svg className='w-4 h-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
               <path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10' />
+            </svg>
+          ),
+        },
+        {
+          id: 'categories',
+          label: isRtl ? 'إدارة الفئات' : 'Categories',
+          icon: (
+            <svg className='w-4 h-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+              <path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M4 6h16M4 10h16M4 14h16M4 18h16' />
             </svg>
           ),
         },
@@ -39,7 +48,7 @@ export default function AdminSidebar({ activeTab, setActiveTab, pendingCount }) 
     .flatMap((g) => g.items)
     .find((item) => item.id === activeTab);
 
-  // إغلاق المنسدلة عند الضغط في أي مكان خارجها
+  // إغلاق المنسدلة عند الضغط خارجها
   useEffect(() => {
     function handleClickOutside(event) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -57,10 +66,9 @@ export default function AdminSidebar({ activeTab, setActiveTab, pendingCount }) 
 
   return (
     <>
-      {/* 📱 1. للموبايل: Sub-Header Breadcrumb Switcher خفيف وراقي جداً */}
+      {/* 📱 1. للموبايل */}
       <div className='md:hidden mb-6 relative' ref={dropdownRef}>
         <div className='bg-white border border-slate-200/80 rounded-2xl p-3.5 shadow-sm flex items-center justify-between'>
-          {/* Breadcrumb Path */}
           <div className='flex items-center gap-2 text-xs font-bold text-slate-400'>
             <span className='bg-slate-100 text-slate-600 px-2 py-1 rounded-lg text-[11px] font-extrabold'>
               Admin
@@ -76,7 +84,6 @@ export default function AdminSidebar({ activeTab, setActiveTab, pendingCount }) 
             </span>
           </div>
 
-          {/* Trigger Button */}
           <button
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
             className='flex items-center gap-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer'
@@ -95,7 +102,6 @@ export default function AdminSidebar({ activeTab, setActiveTab, pendingCount }) 
           </button>
         </div>
 
-        {/* Popover Dropdown Menu */}
         {isDropdownOpen && (
           <div className='absolute top-full left-0 right-0 mt-2 bg-white border border-slate-200/90 rounded-2xl p-2.5 shadow-xl z-30 animate-fade-in'>
             {menuGroups.map((group, gIdx) => (
@@ -139,7 +145,7 @@ export default function AdminSidebar({ activeTab, setActiveTab, pendingCount }) 
         )}
       </div>
 
-      {/* 🖥️ 2. للشاشات الكبيرة: Desktop Sidebar ثابت ومصمم بدقة متناهية */}
+      {/* 🖥️ 2. للشاشات الكبيرة */}
       <aside className='hidden md:block w-64 bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm shrink-0 h-fit sticky top-24'>
         <div className='flex items-center gap-3 pb-4 mb-5 border-b border-slate-100'>
           <div className='w-10 h-10 bg-blue-600 rounded-2xl flex items-center justify-center text-white font-bold shadow-lg shadow-blue-500/20'>
