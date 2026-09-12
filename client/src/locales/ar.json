@@ -314,6 +314,20 @@
     "confirm_promote_msg": "هل أنتِ تأكدتِ من ترقية المستخدم \"{{username}}\" إلى أدمن؟",
     "confirm_demote_msg": "هل أنتِ تأكدتِ من إلغاء صلاحية الأدمن عن المستخدم \"{{username}}\"؟",
     "cancel": "إلغاء",
-    "confirm_action": "تأكيد العملية"
+    "confirm_action": "تأكيد العملية",
+    "categories_tab": "إدارة الفئات",
+    "no_categories": "لا توجد فئات حالياً",
+    "confirm_delete_category": "هل أنت تأكد من رغبتك في حذف هذه الفئة؟",
+    "delete_category_title": "حذف الفئة",
+    "add_category": "إضافة فئة جديدة",
+    "add_subcategory": "إضافة فئة فرعية",
+    "parent_category": "الفئة الأب",
+    "root_category": "-- بدون أب (فئة رئيسية) --",
+    "category_name_ar": "اسم الفئة (بالعربية)",
+    "category_name_en": "اسم الفئة (بالإنكليزية)",
+    "category_slug": "الرابط الدائم (Slug)",
+    "disable": "تعطيل",
+    "enable": "تفعيل",
+    "delete": "حذف"
   }
 }

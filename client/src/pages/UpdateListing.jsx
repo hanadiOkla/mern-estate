@@ -12,6 +12,7 @@ import { useTranslation } from "react-i18next";
 import toast, { Toaster } from "react-hot-toast";
 import { API_BASE_URL } from "../config";
 import DynamicAttributes from "../components/DynamicAttributes";
+import CategorySelect from "../components/CategorySelect";
 
 export default function UpdateListing() {
   const { t, i18n } = useTranslation();
@@ -410,22 +411,16 @@ export default function UpdateListing() {
               <label className="text-xs font-bold text-slate-700 tracking-wide">
                 {currentLang === "ar" ? "التصنيف" : "Category"}
               </label>
-              <select
+              <CategorySelect
                 id="category"
+                categories={categories}
                 value={formData.category}
                 onChange={handleCategoryChange}
                 required
-                className="border border-slate-200 rounded-xl p-3.5 text-sm focus:outline-none focus:border-blue-500 transition-all bg-slate-50/20 text-slate-700 font-medium"
-              >
-                <option value="">
-                  {currentLang === "ar" ? "-- اختر التصنيف --" : "-- Select Category --"}
-                </option>
-                {categories.map((cat, idx) => (
-                  <option key={cat._id || cat.id || `cat_${idx}`} value={cat._id}>
-                    {cat.name?.[currentLang] || cat.name?.ar || cat.name}
-                  </option>
-                ))}
-              </select>
+                placeholder={
+                  currentLang === "ar" ? "-- اختر التصنيف --" : "-- Select Category --"
+                }
+              />
             </div>
 
             <div className="flex flex-col gap-1.5">

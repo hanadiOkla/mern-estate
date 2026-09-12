@@ -300,6 +300,20 @@
     "confirm_promote_msg": "Are you sure you want to promote user \"{{username}}\" to admin?",
     "confirm_demote_msg": "Are you sure you want to remove admin privileges from \"{{username}}\"?",
     "cancel": "Cancel",
-    "confirm_action": "Confirm"
+    "confirm_action": "Confirm",
+    "categories_tab": "Categories",
+    "no_categories": "No categories found",
+    "confirm_delete_category": "Are you sure you want to delete this category?",
+    "delete_category_title": "Delete Category",
+    "add_category": "Add Category",
+    "add_subcategory": "Add subcategory",
+    "parent_category": "Parent Category",
+    "root_category": "-- No parent (root category) --",
+    "category_name_ar": "Category name (Arabic)",
+    "category_name_en": "Category name (English)",
+    "category_slug": "Slug",
+    "disable": "Disable",
+    "enable": "Enable",
+    "delete": "Delete"
   }
 }
