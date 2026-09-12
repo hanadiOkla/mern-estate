@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import OAuth from "../components/OAuth";
 import { useTranslation } from "react-i18next";
-import { API_BASE_URL } from '../config';
+import apiClient from '../api/apiClient';
 
 function SignUp() {
   const [formData, setFormData] = useState({});
@@ -24,16 +24,8 @@ function SignUp() {
     e.preventDefault();
     try {
       setLoading(true);
-      const res = await fetch(`${API_BASE_URL}/api/auth/signup`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-        credentials: "include",
-      });
+      const { data } = await apiClient.post("/api/auth/signup", formData);
 
-      const data = await res.json();
       if (data.success === false) {
         setLoading(false);
         setError(data.message);
@@ -44,7 +36,7 @@ function SignUp() {
       navigate("/sign-in");
     } catch (error) {
       setLoading(false);
-      setError(error.message);
+      setError(error.response?.data?.message || error.message);
     }
   };
 

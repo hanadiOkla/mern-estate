@@ -2,10 +2,11 @@ import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
+import apiClient from "../api/apiClient";
 import { useAdminData } from "../hooks/useAdminData";
 import AdminSidebar from "../components/admin/AdminSidebar";
-import CategoryTreeView from "../components/CategoryTreeView";
-import CategorySelect from "../components/CategorySelect";
+import CategoryTreeView from "../components/category/CategoryTreeView";
+import CategorySelect from "../components/category/CategorySelect";
 import ConfirmModal from "../components/ConfirmModal";
 import Modal from "../components/Modal";
 
@@ -71,12 +72,9 @@ export default function AdminDashboard() {
   // موافقة أو رفض الإعلان
   const handleAction = async (listingId, actionType) => {
     try {
-      const res = await fetch(`/api/listing/approve/${listingId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: actionType }),
+      const { data } = await apiClient.put(`/api/listing/approve/${listingId}`, {
+        action: actionType,
       });
-      const data = await res.json();
 
       if (data.success !== false) {
         setPendingListings((prev) => prev.filter((item) => item._id !== listingId));
@@ -91,17 +89,8 @@ export default function AdminDashboard() {
   // تبديل حالة الفئة (Active / Inactive)
   const handleToggleCategoryStatus = async (categoryId) => {
     try {
-      const res = await fetch(`/api/categories/toggle/${categoryId}`, {
-        method: "PATCH",
-      });
+      const { data } = await apiClient.patch(`/api/categories/toggle/${categoryId}`);
 
-      if (!res.ok) {
-        console.error(`Error Status: ${res.status}`);
-        alert(`تعذر الوصول للمسار (${res.status})`);
-        return;
-      }
-
-      const data = await res.json();
       if (data.success !== false) {
         setCategories((prev) =>
           prev.map((cat) =>
@@ -114,7 +103,12 @@ export default function AdminDashboard() {
         alert(data.message || "فشل تغيير حالة الفئة");
       }
     } catch (error) {
-      console.log(error);
+      if (error.response) {
+        console.error(`Error Status: ${error.response.status}`);
+        alert(`تعذر الوصول للمسار (${error.response.status})`);
+      } else {
+        console.log(error);
+      }
     }
   };
 
@@ -155,10 +149,7 @@ export default function AdminDashboard() {
     if (actionType === "delete_category" && categoryId) {
       try {
         setDeletingCategoryId(categoryId);
-        const res = await fetch(`/api/categories/${categoryId}`, {
-          method: "DELETE",
-        });
-        const data = await res.json();
+        const { data } = await apiClient.delete(`/api/categories/${categoryId}`);
 
         if (data.success) {
           // الحذف قد يشمل فروعاً فرعية أيضاً، لذا يُعاد الجلب لضمان تطابق الحالة مع القاعدة
@@ -185,11 +176,7 @@ export default function AdminDashboard() {
     if (actionType === "toggle_admin" && user) {
       try {
         setUpdatingUserId(user._id);
-        const res = await fetch(`/api/user/toggle-admin/${user._id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-        });
-        const data = await res.json();
+        const { data } = await apiClient.put(`/api/user/toggle-admin/${user._id}`);
 
         if (data.success !== false) {
           setUsers((prev) =>
@@ -250,22 +237,16 @@ export default function AdminDashboard() {
 
     try {
       setCategorySubmitting(true);
-      const res = await fetch("/api/categories/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: {
-            ar: newCategoryData.nameAr,
-            en: newCategoryData.nameEn || newCategoryData.nameAr,
-          },
-          slug: finalSlug,
-          parentId: newCategoryData.parentId || undefined,
-        }),
+      const { data } = await apiClient.post("/api/categories/create", {
+        name: {
+          ar: newCategoryData.nameAr,
+          en: newCategoryData.nameEn || newCategoryData.nameAr,
+        },
+        slug: finalSlug,
+        parentId: newCategoryData.parentId || undefined,
       });
 
-      const data = await res.json();
-
-      if (res.ok && data.success !== false) {
+      if (data.success !== false) {
         setCategories((prev) => [data.category || data, ...prev]);
         handleCloseCategoryModal();
       } else {
@@ -273,7 +254,7 @@ export default function AdminDashboard() {
       }
     } catch (error) {
       console.log(error);
-      setCategoryModalError("حدث خطأ في الاتصال بالخادم");
+      setCategoryModalError(error.response?.data?.message || "حدث خطأ في الاتصال بالخادم");
     } finally {
       setCategorySubmitting(false);
     }

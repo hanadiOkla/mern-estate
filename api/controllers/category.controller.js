@@ -1,4 +1,4 @@
-import Category from '../models/category.js';
+import Category from '../models/category.model.js';
 import Listing from '../models/listing.model.js';
 import { buildCategoryTree } from '../utils/categoryTree.js';
 

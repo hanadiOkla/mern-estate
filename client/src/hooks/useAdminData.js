@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import apiClient from "../api/apiClient";
 
 export function useAdminData(activeTab) {
   const { t } = useTranslation();
@@ -20,9 +21,8 @@ export function useAdminData(activeTab) {
     const fetchPendingListings = async () => {
       try {
         setLoadingListings(true);
-        const res = await fetch("/api/listing/pending");
-        const data = await res.json();
-        
+        const { data } = await apiClient.get("/api/listing/pending");
+
         if (data.success !== false) {
           const listingsArray = Array.isArray(data)
             ? data
@@ -43,8 +43,7 @@ export function useAdminData(activeTab) {
     try {
       setLoadingUsers(true);
       setErrorUsers(null);
-      const res = await fetch("/api/user/all");
-      const data = await res.json();
+      const { data } = await apiClient.get("/api/user/all");
 
       if (data.success === false) {
         setErrorUsers(data.message || t("admin.loading_error"));
@@ -55,7 +54,7 @@ export function useAdminData(activeTab) {
         setUsers(usersArray);
       }
     } catch (error) {
-      setErrorUsers(t("admin.network_error"));
+      setErrorUsers(error.response?.data?.message || t("admin.network_error"));
       console.error(error);
     } finally {
       setLoadingUsers(false);
@@ -73,21 +72,16 @@ export function useAdminData(activeTab) {
     try {
       setLoadingCategories(true);
       setErrorCategories(null);
-      const res = await fetch("/api/categories/admin/all");
-      const data = await res.json();
+      const { data } = await apiClient.get("/api/categories/admin/all");
 
-      if (res.ok) {
-        // استخراج المصفوفة مهما كان شكل التغليف من الـ API
-        const categoriesArray = Array.isArray(data)
-          ? data
-          : data.categories || data.data || [];
-          
-        setCategories(categoriesArray);
-      } else {
-        setErrorCategories(data.message || t("admin.loading_error"));
-      }
+      // استخراج المصفوفة مهما كان شكل التغليف من الـ API
+      const categoriesArray = Array.isArray(data)
+        ? data
+        : data.categories || data.data || [];
+
+      setCategories(categoriesArray);
     } catch (error) {
-      setErrorCategories(t("admin.network_error"));
+      setErrorCategories(error.response?.data?.message || t("admin.network_error"));
       console.error(error);
     } finally {
       setLoadingCategories(false);
@@ -105,35 +99,26 @@ export function useAdminData(activeTab) {
   // دالة الحذف النهائي من قاعدة البيانات والـ State
   const handleDeleteCategory = async (catId) => {
     try {
-      const res = await fetch(`/api/categories/${catId}`, { method: "DELETE" });
-      if (res.ok) {
-        setCategories((prev) => prev.filter((c) => (c._id || c.id) !== catId));
-      } else {
-        const data = await res.json();
-        console.error(data.message);
-      }
+      await apiClient.delete(`/api/categories/${catId}`);
+      setCategories((prev) => prev.filter((c) => (c._id || c.id) !== catId));
     } catch (error) {
-      console.error(error);
+      console.error(error.response?.data?.message || error.message);
     }
   };
 
   // دالة تغيير حالة الفئة (نشط / معطل)
   const handleToggleCategoryStatus = async (catId, currentStatus) => {
     try {
-      const res = await fetch(`/api/categories/${catId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isActive: !currentStatus }),
+      await apiClient.put(`/api/categories/${catId}`, {
+        isActive: !currentStatus,
       });
-      if (res.ok) {
-        setCategories((prev) =>
-          prev.map((c) =>
-            (c._id || c.id) === catId ? { ...c, isActive: !currentStatus } : c
-          )
-        );
-      }
+      setCategories((prev) =>
+        prev.map((c) =>
+          (c._id || c.id) === catId ? { ...c, isActive: !currentStatus } : c
+        )
+      );
     } catch (error) {
-      console.error(error);
+      console.error(error.response?.data?.message || error.message);
     }
   };
 

@@ -3,8 +3,8 @@ import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 
 // استيراد ملفات الترجمة
-import translationAR from './src/locales/ar.json';
-import translationEN from './src/locales/en.json';
+import translationAR from './locales/ar.json';
+import translationEN from './locales/en.json';
 
 const resources = {
   ar: {

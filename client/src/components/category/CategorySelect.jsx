@@ -4,7 +4,7 @@ import {
   flattenWithDepth,
   getDescendantIds,
   getCategoryLabel,
-} from "../utils/categoryTree";
+} from "../../utils/categoryTree";
 
 const DEFAULT_CLASS =
   "border border-slate-200 rounded-xl p-3.5 text-sm focus:outline-none focus:border-blue-500 transition-all bg-slate-50/20 text-slate-700 font-medium";

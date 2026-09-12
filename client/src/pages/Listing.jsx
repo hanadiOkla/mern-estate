@@ -5,8 +5,8 @@ import { useSelector } from "react-redux";
 import { Navigation, Autoplay } from "swiper/modules";
 import { useTranslation } from "react-i18next";
 
-// 1️⃣ استيراد رابط الـ API المركزي والنظيف
-import { API_BASE_URL } from "../config";
+// 1️⃣ استيراد عميل الـ API المركزي والنظيف
+import apiClient from "../api/apiClient";
 
 import "swiper/css";
 import "swiper/css/navigation";
@@ -49,11 +49,7 @@ export default function Listing() {
     const fetchListing = async () => {
       try {
         setLoading(true);
-        const res = await fetch(`${API_BASE_URL}/api/listing/get/${params.listingId}`, {
-          method: 'GET',
-          credentials: 'include',
-        });
-        const data = await res.json();
+        const { data } = await apiClient.get(`/api/listing/get/${params.listingId}`);
         if (data.success === false) {
           setError(true);
           setLoading(false);
@@ -79,14 +75,7 @@ export default function Listing() {
         setValLoading(true);
         setValError(null);
 
-        const res = await fetch(`${API_BASE_URL}/api/listing/evaluate-ai`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(listing),
-          credentials: "include",
-        });
-
-        const data = await res.json();
+        const { data } = await apiClient.post("/api/listing/evaluate-ai", listing);
         if (data.success === false) {
           setValError(data.message);
           setValLoading(false);

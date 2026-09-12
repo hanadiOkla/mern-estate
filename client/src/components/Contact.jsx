@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next"; // استيراد خطاف الترجمة
+import apiClient from "../api/apiClient";
 
 export default function Contact({ listing }) {
   const { t } = useTranslation(); // تفعيل دالة الترجمة
@@ -14,14 +15,7 @@ export default function Contact({ listing }) {
   useEffect(() => {
     const fetchLandlord = async () => {
       try {
-        const res = await fetch(
-          `${API_BASE_URL}/api/user/${listing.userRef}`,
-          {
-            method: "GET", // 👈 تحديد نوع الطلب بشكل صريح
-            credentials: "include", // 👈 السطر السحري لتمرير كوكيز الهوية (access_token) أونلاين
-          },
-        );
-        const data = await res.json();
+        const { data } = await apiClient.get(`/api/user/${listing.userRef}`);
         setLandlord(data);
       } catch (error) {
         console.log(error);

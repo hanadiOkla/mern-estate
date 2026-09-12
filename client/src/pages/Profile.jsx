@@ -20,7 +20,7 @@ import {
 } from "../redux/user/userSlice";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { API_BASE_URL } from "../config";
+import apiClient from "../api/apiClient";
 import { useToast } from "../context/ToastContext"; // 👈 استخدام الـ Global Toast Hook
 import {
   FaClock,
@@ -110,16 +110,10 @@ function Profile() {
       const cleanFormData = { ...formData };
       if (!cleanFormData.password) delete cleanFormData.password;
 
-      const res = await fetch(
-        `${API_BASE_URL}/api/user/update/${currentUser._id}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify(cleanFormData),
-        }
+      const { data } = await apiClient.post(
+        `/api/user/update/${currentUser._id}`,
+        cleanFormData
       );
-      const data = await res.json();
       if (data.success === false) {
         dispatch(updateUserFailure(data.message));
         showToast(data.message, "error");
@@ -131,22 +125,16 @@ function Profile() {
         "success"
       );
     } catch (error) {
-      dispatch(updateUserFailure(error.message));
-      showToast(error.message, "error");
+      const message = error.response?.data?.message || error.message;
+      dispatch(updateUserFailure(message));
+      showToast(message, "error");
     }
   };
 
   const handleDeleteUser = async () => {
     try {
       dispatch(deleteUserStart());
-      const res = await fetch(
-        `${API_BASE_URL}/api/user/delete/${currentUser._id}`,
-        {
-          method: "DELETE",
-          credentials: "include",
-        }
-      );
-      const data = await res.json();
+      const { data } = await apiClient.delete(`/api/user/delete/${currentUser._id}`);
       if (data.success === false) {
         dispatch(deleteUserFailure(data.message));
         showToast(data.message, "error");
@@ -158,19 +146,16 @@ function Profile() {
         "success"
       );
     } catch (error) {
-      dispatch(deleteUserFailure(error.message));
-      showToast(error.message, "error");
+      const message = error.response?.data?.message || error.message;
+      dispatch(deleteUserFailure(message));
+      showToast(message, "error");
     }
   };
 
   const handleSignOut = async () => {
     try {
       dispatch(signOutUserStart());
-      const res = await fetch(`${API_BASE_URL}/api/auth/signout`, {
-        method: "GET",
-        credentials: "include",
-      });
-      const data = await res.json();
+      const { data } = await apiClient.get("/api/auth/signout");
       if (data.success === false) {
         dispatch(signOutUserFailure(data.message));
         showToast(data.message, "error");
@@ -182,22 +167,16 @@ function Profile() {
         "success"
       );
     } catch (error) {
-      dispatch(signOutUserFailure(error.message));
-      showToast(error.message, "error");
+      const message = error.response?.data?.message || error.message;
+      dispatch(signOutUserFailure(message));
+      showToast(message, "error");
     }
   };
 
   const handleShowListings = async () => {
     setLoadingListings(true);
     try {
-      const res = await fetch(
-        `${API_BASE_URL}/api/user/listings/${currentUser._id}`,
-        {
-          method: "GET",
-          credentials: "include",
-        }
-      );
-      const data = await res.json();
+      const { data } = await apiClient.get(`/api/user/listings/${currentUser._id}`);
       if (data.success === false) {
         showToast(
           t("profile.listings_error", "حدث خطأ أثناء تحميل العقارات"),
@@ -220,14 +199,7 @@ function Profile() {
   const handleListingDelete = async () => {
     if (!listingToDelete) return;
     try {
-      const res = await fetch(
-        `${API_BASE_URL}/api/listing/delete/${listingToDelete}`,
-        {
-          method: "DELETE",
-          credentials: "include",
-        }
-      );
-      const data = await res.json();
+      const { data } = await apiClient.delete(`/api/listing/delete/${listingToDelete}`);
       if (data.success === false) {
         showToast(data.message, "error");
         setShowDeleteModal(false);
@@ -244,7 +216,7 @@ function Profile() {
       setListingToDelete(null);
     } catch (error) {
       setShowDeleteModal(false);
-      showToast(error.message, "error");
+      showToast(error.response?.data?.message || error.message, "error");
     }
   };
 

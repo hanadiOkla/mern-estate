@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { buildCategoryTree, getCategoryLabel } from "../utils/categoryTree";
+import { buildCategoryTree, getCategoryLabel } from "../../utils/categoryTree";
 
 function ChevronIcon({ expanded }) {
   return (

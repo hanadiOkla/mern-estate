@@ -3,7 +3,7 @@
 // تشغيل: npm run seed:categories
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-import Category from '../models/category.js';
+import Category from '../models/category.model.js';
 
 dotenv.config();
 

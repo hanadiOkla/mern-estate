@@ -10,9 +10,9 @@ import { useSelector } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import toast, { Toaster } from "react-hot-toast";
-import { API_BASE_URL } from "../config";
-import DynamicAttributes from "../components/DynamicAttributes";
-import CategorySelect from "../components/CategorySelect";
+import apiClient from "../api/apiClient";
+import DynamicAttributes from "../components/listing/DynamicAttributes";
+import CategorySelect from "../components/category/CategorySelect";
 
 export default function UpdateListing() {
   const { t, i18n } = useTranslation();
@@ -59,11 +59,8 @@ export default function UpdateListing() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/api/categories`);
-        const data = await res.json();
-        if (res.ok) {
-          setCategories(data);
-        }
+        const { data } = await apiClient.get("/api/categories");
+        setCategories(data);
       } catch (err) {
         console.error("Error fetching categories:", err);
       }
@@ -85,12 +82,9 @@ export default function UpdateListing() {
           return;
         }
 
-        const res = await fetch(`${API_BASE_URL}/api/listing/get/${listingId}`, {
-          credentials: "include",
-        });
-        const data = await res.json();
+        const { data } = await apiClient.get(`/api/listing/get/${listingId}`);
 
-        if (!res.ok || data.success === false) {
+        if (data.success === false) {
           toast.error(data?.message || t("fetch_error"));
           return;
         }
@@ -113,7 +107,7 @@ export default function UpdateListing() {
         toast.error(
           !navigator.onLine
             ? (isRtl ? "أنت غير متصل بالإنترنت حالياً 📡" : "You are offline 📡")
-            : err.message || t("fetch_error")
+            : err.response?.data?.message || err.message || t("fetch_error")
         );
       } finally {
         if (isMounted) {
@@ -229,15 +223,8 @@ export default function UpdateListing() {
     try {
       setAiLoading(true);
 
-      const res = await fetch(`${API_BASE_URL}/api/listing/generate-ai`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(formData),
-      });
-
-      const data = await res.json();
-      if (!res.ok || data.success === false) {
+      const { data } = await apiClient.post("/api/listing/generate-ai", formData);
+      if (data.success === false) {
         throw new Error(data.message || t("ai_error_fields"));
       }
 
@@ -247,7 +234,7 @@ export default function UpdateListing() {
       }));
       toast.success(isRtl ? "تم توليد الوصف بنجاح! ✨" : "Description generated! ✨", { id: toastId });
     } catch (err) {
-      toast.error(err.message, { id: toastId });
+      toast.error(err.response?.data?.message || err.message, { id: toastId });
     } finally {
       setAiLoading(false);
     }
@@ -263,22 +250,15 @@ export default function UpdateListing() {
     try {
       setValLoading(true);
 
-      const res = await fetch(`${API_BASE_URL}/api/listing/evaluate-ai`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(formData),
-      });
-
-      const data = await res.json();
-      if (!res.ok || data.success === false) {
+      const { data } = await apiClient.post("/api/listing/evaluate-ai", formData);
+      if (data.success === false) {
         throw new Error(data.message || t("ai_val_connection_error"));
       }
 
       setValuation(data.valuation);
       toast.success(isRtl ? "تم حساب التقييم بنجاح!" : "Valuation calculated!", { id: toastId });
     } catch (err) {
-      toast.error(err.message, { id: toastId });
+      toast.error(err.response?.data?.message || err.message, { id: toastId });
     } finally {
       setValLoading(false);
     }
@@ -323,19 +303,10 @@ export default function UpdateListing() {
       setLoading(true);
       const toastId = toast.loading(t("btn_publishing_listing"));
 
-      const res = await fetch(`${API_BASE_URL}/api/listing/update/${params.listingId}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({
-          ...formData,
-          userRef: currentUser._id,
-        }),
+      const { data } = await apiClient.post(`/api/listing/update/${params.listingId}`, {
+        ...formData,
+        userRef: currentUser._id,
       });
-
-      const data = await res.json();
       setLoading(false);
 
       if (data.success === false) {
@@ -346,7 +317,7 @@ export default function UpdateListing() {
       toast.success(isRtl ? "تم تحديث الإعلان بنجاح!" : "Listing updated successfully!", { id: toastId });
       navigate(`/listing/${data._id}`);
     } catch (error) {
-      toast.error(error.message);
+      toast.error(error.response?.data?.message || error.message);
       setLoading(false);
     }
   };

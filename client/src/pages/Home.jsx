@@ -8,9 +8,9 @@ import { useTranslation } from "react-i18next";
 import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/effect-fade';
-import ListingItem from '../components/ListingItem';
+import ListingItem from '../components/listing/ListingItem';
 import '../index.css';
-import { API_BASE_URL } from '../config';
+import apiClient from '../api/apiClient';
 
 function Home() {
   const [offerListings, setOfferListings] = useState([]);
@@ -30,16 +30,12 @@ function Home() {
         setLoading(true);
         // جلب جميع الطلبات بالتوازي (Parallel Fetching) لسرعة استجابة أعلى بكثير
         const [offerRes, rentRes, saleRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/api/listing/get?offer=true&limit=4`, { credentials: 'include' }),
-          fetch(`${API_BASE_URL}/api/listing/get?type=rent&limit=4`, { credentials: 'include' }),
-          fetch(`${API_BASE_URL}/api/listing/get?type=sale&limit=4`, { credentials: 'include' }),
+          apiClient.get('/api/listing/get?offer=true&limit=4'),
+          apiClient.get('/api/listing/get?type=rent&limit=4'),
+          apiClient.get('/api/listing/get?type=sale&limit=4'),
         ]);
 
-        const [offerData, rentData, saleData] = await Promise.all([
-          offerRes.json(),
-          rentRes.json(),
-          saleRes.json(),
-        ]);
+        const [offerData, rentData, saleData] = [offerRes.data, rentRes.data, saleRes.data];
 
         if (Array.isArray(offerData)) setOfferListings(offerData);
         if (Array.isArray(rentData)) setRentListings(rentData);

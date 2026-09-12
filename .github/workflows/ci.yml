@@ -23,9 +23,7 @@ jobs:
           cache-dependency-path: './package-lock.json' # تم التعديل للمسار الرئيسي الصحيح
 
       - name: Install Backend Dependencies
-        run: |
-          cd api
-          npm ci
+        run: npm ci
 
   # 2. مهمة فحص وتأكيد بناء الـ Frontend (client)
   frontend-ci:

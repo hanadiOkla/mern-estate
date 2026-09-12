@@ -4,7 +4,7 @@ import { useDispatch } from "react-redux";
 import { signInSuccess } from "../redux/user/userSlice";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { API_BASE_URL } from "../config";
+import apiClient from "../api/apiClient";
 
 export default function OAuth() {
   const { t, i18n } = useTranslation();
@@ -17,19 +17,12 @@ export default function OAuth() {
       const auth = getAuth(app);
       const result = await signInWithPopup(auth, provider);
 
-      const res = await fetch(`${API_BASE_URL}/api/auth/google`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include", // مهم جداً لإرسال واستقبال الكوكي
-        body: JSON.stringify({
-          name: result.user.displayName,
-          email: result.user.email,
-          photo: result.user.photoURL,
-        }),
+      const { data } = await apiClient.post("/api/auth/google", {
+        name: result.user.displayName,
+        email: result.user.email,
+        photo: result.user.photoURL,
       });
 
-      const data = await res.json();
-      
       // تحديث الـ Redux ببيانات المستخدم القادمة من السيرفر
       dispatch(signInSuccess(data));
       navigate("/");

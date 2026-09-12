@@ -9,9 +9,9 @@ import { app } from "../firebase";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { API_BASE_URL } from "../config";
-import DynamicAttributes from "../components/DynamicAttributes";
-import CategorySelect from "../components/CategorySelect";
+import apiClient from "../api/apiClient";
+import DynamicAttributes from "../components/listing/DynamicAttributes";
+import CategorySelect from "../components/category/CategorySelect";
 
 export default function CreateListing() {
   const { currentUser } = useSelector((state) => state.user);
@@ -52,11 +52,8 @@ export default function CreateListing() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/api/categories`);
-        const data = await res.json();
-        if (res.ok) {
-          setCategories(data);
-        }
+        const { data } = await apiClient.get("/api/categories");
+        setCategories(data);
       } catch (err) {
         console.error("Error fetching categories:", err);
       }
@@ -179,18 +176,10 @@ export default function CreateListing() {
         return setError(t("err_price_validation"));
       setLoading(true);
       setError(false);
-      const res = await fetch(`${API_BASE_URL}/api/listing/create`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ...formData,
-          userRef: currentUser._id,
-        }),
-        credentials: "include",
+      const { data } = await apiClient.post("/api/listing/create", {
+        ...formData,
+        userRef: currentUser._id,
       });
-      const data = await res.json();
       setLoading(false);
       if (data.success === false) {
         setError(data.message);
@@ -198,7 +187,7 @@ export default function CreateListing() {
       }
       navigate(`/listing/${data._id}`);
     } catch (error) {
-      setError(error.message);
+      setError(error.response?.data?.message || error.message);
       setLoading(false);
     }
   };
@@ -213,16 +202,7 @@ export default function CreateListing() {
       setAiLoading(true);
       setAiError(null);
 
-      const res = await fetch(`${API_BASE_URL}/api/listing/generate-ai`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify(formData),
-      });
-
-      const data = await res.json();
+      const { data } = await apiClient.post("/api/listing/generate-ai", formData);
 
       if (data.success === false) {
         setAiError(data.message);
@@ -237,7 +217,7 @@ export default function CreateListing() {
 
       setAiLoading(false);
     } catch (error) {
-      setAiError(error.message);
+      setAiError(error.response?.data?.message || error.message);
       setAiLoading(false);
     }
   };
@@ -256,16 +236,7 @@ export default function CreateListing() {
       setValError(null);
       setValuation(null);
 
-      const res = await fetch(`${API_BASE_URL}/api/listing/evaluate-ai`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify(formData),
-      });
-
-      const data = await res.json();
+      const { data } = await apiClient.post("/api/listing/evaluate-ai", formData);
 
       if (data.success === false) {
         setValError(data.message);

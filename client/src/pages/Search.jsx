@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import ListingItem from "../components/ListingItem";
+import ListingItem from "../components/listing/ListingItem";
 import { useTranslation } from "react-i18next";
-import { API_BASE_URL } from "../config";
+import apiClient from "../api/apiClient";
 
 export default function Search() {
   const navigate = useNavigate();
@@ -59,14 +59,7 @@ export default function Search() {
         setLoading(true);
         setShowMore(false);
         const searchQuery = urlParams.toString();
-        const res = await fetch(
-          `${API_BASE_URL}/api/listing/get?${searchQuery}`,
-          {
-            method: "GET",
-            credentials: "include",
-          },
-        );
-        const data = await res.json();
+        const { data } = await apiClient.get(`/api/listing/get?${searchQuery}`);
 
         if (!Array.isArray(data)) {
           setListings([]);
@@ -141,14 +134,7 @@ export default function Search() {
     const searchQuery = urlParams.toString();
 
     try {
-      const res = await fetch(
-        `${API_BASE_URL}/api/listing/get?${searchQuery}`,
-        {
-          method: "GET",
-          credentials: "include",
-        },
-      );
-      const data = await res.json();
+      const { data } = await apiClient.get(`/api/listing/get?${searchQuery}`);
 
       if (!Array.isArray(data) || data.length < 9) {
         setShowMore(false);

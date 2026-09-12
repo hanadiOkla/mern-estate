@@ -8,7 +8,7 @@ import {
 } from "../redux/user/userSlice";
 import OAuth from "../components/OAuth";
 import { useTranslation } from "react-i18next";
-import { API_BASE_URL } from '../config';
+import apiClient from '../api/apiClient';
 
 function SignIn() {
   const [formData, setFormData] = useState({});
@@ -30,25 +30,16 @@ function SignIn() {
     e.preventDefault();
     try {
       dispatch(signInStart());
-      const res = await fetch(`${API_BASE_URL}/api/auth/signin`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: 'include',
-        body: JSON.stringify(formData),
-      });
-
-      const data = await res.json();
+      const { data } = await apiClient.post("/api/auth/signin", formData);
       if (data.success === false) {
         dispatch(signInFailure(data.message));
         return;
       }
-      
+
       dispatch(signInSuccess(data));
       navigate("/");
     } catch (error) {
-      dispatch(signInFailure(error.message));
+      dispatch(signInFailure(error.response?.data?.message || error.message));
     }
   };
 
