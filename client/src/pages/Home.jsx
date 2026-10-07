@@ -11,18 +11,29 @@ import 'swiper/css/effect-fade';
 import ListingItem from '../components/listing/ListingItem';
 import '../index.css';
 import apiClient from '../api/apiClient';
+import { getCategoryLabel } from '../utils/categoryTree';
+import { CategoryIcon } from '../utils/categoryIcons';
 
 function Home() {
   const [offerListings, setOfferListings] = useState([]);
   const [saleListings, setSaleListings] = useState([]);
   const [rentListings, setRentListings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [rootCategories, setRootCategories] = useState([]);
 
   const prevRef = useRef(null);
   const nextRef = useRef(null);
 
   const { t, i18n } = useTranslation();
   const isRtl = i18n.dir() === 'rtl';
+  const lang = i18n.language?.startsWith('ar') ? 'ar' : 'en';
+
+  useEffect(() => {
+    apiClient
+      .get('/api/categories?withCounts=true')
+      .then(({ data }) => Array.isArray(data) && setRootCategories(data.filter((cat) => !cat.parentId)))
+      .catch(() => setRootCategories([]));
+  }, []);
 
   useEffect(() => {
     const fetchAllListings = async () => {
@@ -123,7 +134,41 @@ function Home() {
       
       {/* Listings sections */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col gap-16 pb-24">
-        
+
+        {/* تصفح حسب التصنيف: بطاقات أيقونات للفئات الرئيسية مع عدد الإعلانات */}
+        {rootCategories.length > 0 && (
+          <div className="flex flex-col gap-4">
+            <div className="flex justify-between items-end border-b border-slate-200/60 pb-3">
+              <div>
+                <h2 className="text-2xl font-bold text-slate-800 tracking-tight">{t('home.browse_categories')}</h2>
+                <p className="text-sm text-slate-400 mt-0.5">{t('home.categories_subtitle')}</p>
+              </div>
+              <Link className="text-sm font-semibold text-blue-600 hover:text-blue-700 transition-colors" to={'/search'}>
+                {t('search.all_categories')} <span className="inline-block rtl:rotate-180" aria-hidden="true">&rarr;</span>
+              </Link>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mt-2">
+              {rootCategories.map((cat) => {
+                return (
+                  <Link
+                    key={cat._id}
+                    to={`/search?category=${cat._id}`}
+                    className="group flex flex-col items-center gap-3 bg-white border border-slate-200/80 rounded-2xl px-4 py-6 shadow-sm hover:shadow-md hover:border-blue-200 hover:-translate-y-0.5 transition-all"
+                  >
+                    <span className="w-14 h-14 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                      <CategoryIcon category={cat} className="w-6 h-6" />
+                    </span>
+                    <span className="text-sm font-bold text-slate-800 text-center">{getCategoryLabel(cat, lang)}</span>
+                    <span className="text-xs text-slate-400 font-medium">
+                      {t('search.listings_count', { count: cat.listingCount || 0 })}
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Recent Offers */}
         {offerListings && offerListings.length > 0 && (
           <div className="flex flex-col gap-4">

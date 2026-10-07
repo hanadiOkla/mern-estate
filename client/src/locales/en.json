@@ -1,6 +1,9 @@
 {
   "nav_home": "Home",
   "nav_about": "About",
+  "nav_categories": "Categories",
+  "nav_view_all_in": "View all in {{name}}",
+  "nav_no_subcategories": "No sub-categories yet",
   "search_placeholder": "Search properties, areas...",
   "sign_in": "Sign In",
   "dir": "ltr",
@@ -69,6 +72,8 @@
   "lbl_image": "Image",
   "btn_delete": "Delete",
   "home": {
+    "browse_categories": "Browse by Category",
+    "categories_subtitle": "Pick a category to see all its listings, including its sub-categories",
     "hero_title_1": "Find your next",
     "hero_perfect": "perfect",
     "hero_title_2": "place with ease",
@@ -145,7 +150,11 @@
     "results_title": "Listing Results",
     "no_results": "No properties found matching your criteria.",
     "loading": "Loading premium listings...",
-    "show_more": "Show More Properties"
+    "show_more": "Show More Properties",
+    "categories": "Categories",
+    "all_categories": "All Categories",
+    "listings_count_one": "{{count}} listing",
+    "listings_count_other": "{{count}} listings"
   },
   "signin": {
     "welcome_title": "Welcome Back",
@@ -314,6 +323,10 @@
     "category_slug": "Slug",
     "disable": "Disable",
     "enable": "Enable",
-    "delete": "Delete"
+    "delete": "Delete",
+    "edit": "Edit",
+    "edit_category": "Edit Category",
+    "save_changes": "Save changes",
+    "saving": "Saving..."
   }
 }

@@ -3,12 +3,15 @@ import { Link } from "react-router-dom";
 import { MdLocationOn } from "react-icons/md";
 import { FaBed, FaBath } from "react-icons/fa";
 import { useTranslation } from "react-i18next"; // استيراد خطاف الترجمة
+import { getCategoryLabel } from "../../utils/categoryTree";
 
 export default function ListingItem({ listing }) {
   const { t, i18n } = useTranslation();
-  
+  const lang = i18n.language?.startsWith("ar") ? "ar" : "en";
+
   // تحديد السعر النشط بناءً على وجود خصم/عرض
   const activePrice = listing.offer ? listing.discountPrice : listing.regularPrice;
+  const categoryLabel = getCategoryLabel(listing.category, lang);
 
   return (
     // استخدام text-start يضمن محاذاة النصوص تلقائياً حسب اتجاه اللغة (يمين في RTL ويسار في LTR)
@@ -55,6 +58,13 @@ export default function ListingItem({ listing }) {
           <h3 className="truncate text-base font-bold text-slate-800 group-hover:text-blue-600 transition-colors">
             {listing.name}
           </h3>
+
+          {/* شارة التصنيف */}
+          {categoryLabel && (
+            <span className="self-start text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full uppercase tracking-wide">
+              {categoryLabel}
+            </span>
+          )}
 
           {/* الموقع */}
           <div className="flex items-center gap-1 text-slate-400">

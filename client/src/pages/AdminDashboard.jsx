@@ -46,6 +46,8 @@ export default function AdminDashboard() {
     slug: "",
     parentId: "",
   });
+  // عند تعديل فئة موجودة يُحفظ معرّفها هنا (null = وضع الإضافة)
+  const [editingCategoryId, setEditingCategoryId] = useState(null);
   const [categorySubmitting, setCategorySubmitting] = useState(false);
   const [categoryModalError, setCategoryModalError] = useState("");
 
@@ -206,19 +208,34 @@ export default function AdminDashboard() {
 
   // فتح مودال "إضافة فئة" مع تعبئة الأب مسبقاً عند الضغط على "+" أسفل فئة معينة
   const handleOpenCategoryModal = (parentId = "") => {
+    setEditingCategoryId(null);
     setNewCategoryData({ nameAr: "", nameEn: "", slug: "", parentId: parentId || "" });
+    setCategoryModalError("");
+    setIsCategoryModalOpen(true);
+  };
+
+  // فتح نفس المودال في وضع التعديل مع تعبئة بيانات الفئة الحالية (الاسم، الـ slug، الأب)
+  const handleOpenEditCategoryModal = (category) => {
+    setEditingCategoryId(category._id);
+    setNewCategoryData({
+      nameAr: category.name?.ar || "",
+      nameEn: category.name?.en || "",
+      slug: category.slug || "",
+      parentId: category.parentId ? String(category.parentId) : "",
+    });
     setCategoryModalError("");
     setIsCategoryModalOpen(true);
   };
 
   const handleCloseCategoryModal = () => {
     setIsCategoryModalOpen(false);
+    setEditingCategoryId(null);
     setCategoryModalError("");
     setNewCategoryData({ nameAr: "", nameEn: "", slug: "", parentId: "" });
   };
 
-  // إضافة فئة جديدة (فئة رئيسية أو فئة فرعية حسب parentId)
-  const handleCreateCategory = async (e) => {
+  // إضافة فئة جديدة (فئة رئيسية أو فئة فرعية حسب parentId)، أو حفظ تعديلات فئة موجودة
+  const handleSubmitCategory = async (e) => {
     e.preventDefault();
     setCategoryModalError("");
 
@@ -235,13 +252,34 @@ export default function AdminDashboard() {
         .replace(/\s+/g, "-")
         .replace(/[^\w؀-ۿ-]/g, "");
 
+    const name = {
+      ar: newCategoryData.nameAr,
+      en: newCategoryData.nameEn || newCategoryData.nameAr,
+    };
+
     try {
       setCategorySubmitting(true);
+
+      if (editingCategoryId) {
+        // parentId فارغ = تحويل الفئة إلى فئة رئيسية
+        const { data } = await apiClient.patch(`/api/categories/${editingCategoryId}`, {
+          name,
+          slug: finalSlug,
+          parentId: newCategoryData.parentId || null,
+        });
+
+        if (data.success !== false) {
+          // إعادة الجلب لأن نقل الفئة يغيّر سلسلة الأجداد لكل فروعها أيضاً
+          await refetchCategories();
+          handleCloseCategoryModal();
+        } else {
+          setCategoryModalError(data.message || "فشل تحديث الفئة");
+        }
+        return;
+      }
+
       const { data } = await apiClient.post("/api/categories/create", {
-        name: {
-          ar: newCategoryData.nameAr,
-          en: newCategoryData.nameEn || newCategoryData.nameAr,
-        },
+        name,
         slug: finalSlug,
         parentId: newCategoryData.parentId || undefined,
       });
@@ -486,6 +524,7 @@ export default function AdminDashboard() {
                 <CategoryTreeView
                   categories={categories}
                   onAddChild={(node) => handleOpenCategoryModal(node._id)}
+                  onEdit={(node) => handleOpenEditCategoryModal(node)}
                   onToggleStatus={(node) => handleToggleCategoryStatus(node._id)}
                   onDelete={(node) => handleDeleteCategoryClick(node._id)}
                 />
@@ -526,14 +565,16 @@ export default function AdminDashboard() {
           isOpen={isCategoryModalOpen}
           onClose={handleCloseCategoryModal}
           title={
-            parentCategoryForModal
+            editingCategoryId
+              ? t("admin.edit_category")
+              : parentCategoryForModal
               ? `${t("admin.add_subcategory")} — ${
                   parentCategoryForModal.name?.[i18n.language] || parentCategoryForModal.name?.ar
                 }`
               : t("admin.add_category")
           }
         >
-          <form onSubmit={handleCreateCategory} className="space-y-4">
+          <form onSubmit={handleSubmitCategory} className="space-y-4">
             {categoryModalError && (
               <div className="p-3 bg-rose-50 border border-rose-200 text-rose-600 rounded-xl text-xs font-medium">
                 {categoryModalError}
@@ -547,6 +588,7 @@ export default function AdminDashboard() {
               <CategorySelect
                 categories={categories}
                 value={newCategoryData.parentId}
+                excludeId={editingCategoryId}
                 onChange={(e) =>
                   setNewCategoryData({ ...newCategoryData, parentId: e.target.value })
                 }
@@ -620,7 +662,13 @@ export default function AdminDashboard() {
                 disabled={categorySubmitting}
                 className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-xl text-xs font-bold"
               >
-                {categorySubmitting ? "جاري الإضافة..." : "حفظ الفئة"}
+                {categorySubmitting
+                  ? editingCategoryId
+                    ? t("admin.saving", "جاري الحفظ...")
+                    : "جاري الإضافة..."
+                  : editingCategoryId
+                    ? t("admin.save_changes", "حفظ التعديلات")
+                    : "حفظ الفئة"}
               </button>
             </div>
           </form>

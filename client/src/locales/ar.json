@@ -1,6 +1,9 @@
 {
   "nav_home": "الرئيسية",
   "nav_about": "من نحن",
+  "nav_categories": "التصنيفات",
+  "nav_view_all_in": "عرض الكل في {{name}}",
+  "nav_no_subcategories": "لا توجد تصنيفات فرعية بعد",
   "search_placeholder": "ابحث عن العقارات، المناطق...",
   "sign_in": "تسجيل الدخول",
   "dir": "rtl",
@@ -69,6 +72,8 @@
   "lbl_image": "صورة",
   "btn_delete": "حذف",
 "home": {
+    "browse_categories": "تصفح حسب التصنيف",
+    "categories_subtitle": "اختر تصنيفاً لعرض جميع إعلاناته بما فيها التصنيفات الفرعية",
     "hero_title_1": "ابحث عن مكانك",
     "hero_perfect": "المثالي",
     "hero_title_2": "التالي بكل سهولة",
@@ -145,7 +150,10 @@
     "results_title": "نتائج البحث",
     "no_results": "لم يتم العثور على عقارات تطابق معايير البحث الخاصة بك.",
     "loading": "جاري تحميل العقارات المميزة...",
-    "show_more": "عرض المزيد من العقارات"
+    "show_more": "عرض المزيد من العقارات",
+    "categories": "التصنيفات",
+    "all_categories": "كل التصنيفات",
+    "listings_count": "{{count}} إعلان"
   },
   "signin": {
     "welcome_title": "مرحباً بعودتك",
@@ -328,6 +336,10 @@
     "category_slug": "الرابط الدائم (Slug)",
     "disable": "تعطيل",
     "enable": "تفعيل",
-    "delete": "حذف"
+    "delete": "حذف",
+    "edit": "تعديل",
+    "edit_category": "تعديل الفئة",
+    "save_changes": "حفظ التعديلات",
+    "saving": "جاري الحفظ..."
   }
 }

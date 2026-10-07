@@ -1,5 +1,7 @@
+import mongoose from "mongoose";
 import Listing from "../models/listing.model.js";
 import User from '../models/user.model.js';
+import Category from '../models/category.model.js';
 import { errorHandler } from "../utils/error.js";
 import OpenAI from "openai";
 import dotenv from "dotenv";
@@ -127,14 +129,28 @@ export const getListings = async (req, res, next) => {
     const sort = req.query.sort || "createdAt";
     const order = req.query.order || "desc";
 
+    const categoryFilter = {};
+    if (req.query.category) {
+      if (!mongoose.Types.ObjectId.isValid(req.query.category)) {
+        return res.status(200).json([]);
+      }
+      // تضمين الفئة المختارة وكل فروعها الفرعية (عبر ancestors) حتى تظهر إعلانات
+      // الفئات الفرعية عند اختيار فئة رئيسية، مثال: اختيار "سيارات" يعرض أيضاً "مرسيدس"
+      const descendants = await Category.find({ ancestors: req.query.category }).select('_id');
+      const subtreeIds = [req.query.category, ...descendants.map((doc) => doc._id.toString())];
+      categoryFilter.category = { $in: subtreeIds };
+    }
+
     const listings = await Listing.find({
       name: { $regex: searchTerm, $options: "i" },
       offer,
       furnished,
       parking,
       type,
+      ...categoryFilter,
       status: "active" // 🛡️ حماية: الزوار والبحث العام يعرض فقط العقارات المقبولة والمعتمدة
     })
+      .populate('category', 'name slug icon')
       .sort({ [sort]: order })
       .limit(limit)
       .skip(startIndex);

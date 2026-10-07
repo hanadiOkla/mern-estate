@@ -1,8 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import ListingItem from "../components/listing/ListingItem";
 import { useTranslation } from "react-i18next";
 import apiClient from "../api/apiClient";
+import CategoryBrowser from "../components/category/CategoryBrowser";
+import { getCategoryLabel } from "../utils/categoryTree";
+import { CategoryIcon } from "../utils/categoryIcons";
 
 export default function Search() {
   const navigate = useNavigate();
@@ -10,6 +13,7 @@ export default function Search() {
 
   const { t, i18n } = useTranslation();
   const isRtl = i18n.dir() === "rtl";
+  const lang = i18n.language?.startsWith("ar") ? "ar" : "en";
 
   const [sidebardata, setSidebardata] = useState({
     searchTerm: "",
@@ -17,6 +21,7 @@ export default function Search() {
     parking: false,
     furnished: false,
     offer: false,
+    category: "",
     sort: "createdAt",
     order: "desc",
   });
@@ -24,6 +29,19 @@ export default function Search() {
   const [loading, setLoading] = useState(false);
   const [listings, setListings] = useState([]);
   const [showMore, setShowMore] = useState(false);
+  const [categories, setCategories] = useState([]);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const { data } = await apiClient.get("/api/categories?withCounts=true");
+        if (Array.isArray(data)) setCategories(data);
+      } catch (error) {
+        setCategories([]);
+      }
+    };
+    fetchCategories();
+  }, []);
 
   useEffect(() => {
     const urlParams = new URLSearchParams(location.search);
@@ -34,6 +52,7 @@ export default function Search() {
     const offerFormUrl = urlParams.get("offer");
     const sortFormUrl = urlParams.get("sort");
     const orderFormUrl = urlParams.get("order");
+    const categoryFormUrl = urlParams.get("category");
 
     if (
       searchTermFormUrl !== null ||
@@ -41,7 +60,8 @@ export default function Search() {
       parkingFormUrl !== null ||
       furnishedFormUrl !== null ||
       offerFormUrl !== null ||
-      sortFormUrl !== null
+      sortFormUrl !== null ||
+      categoryFormUrl !== null
     ) {
       setSidebardata({
         searchTerm: searchTermFormUrl || "",
@@ -49,6 +69,7 @@ export default function Search() {
         parking: parkingFormUrl === "true",
         furnished: furnishedFormUrl === "true",
         offer: offerFormUrl === "true",
+        category: categoryFormUrl || "",
         sort: sortFormUrl || "createdAt",
         order: orderFormUrl || "desc",
       });
@@ -120,11 +141,43 @@ export default function Search() {
     urlParams.set("parking", sidebardata.parking);
     urlParams.set("furnished", sidebardata.furnished);
     urlParams.set("offer", sidebardata.offer);
+    if (sidebardata.category) urlParams.set("category", sidebardata.category);
     urlParams.set("sort", sidebardata.sort);
     urlParams.set("order", sidebardata.order);
     const searchQuery = urlParams.toString();
     navigate(`/search?${searchQuery}`);
   };
+
+  // اختيار فئة من الشجرة يطبَّق فوراً مع الإبقاء على بقية الفلاتر الحالية في الرابط
+  const handleCategorySelect = (category) => {
+    const urlParams = new URLSearchParams(location.search);
+    urlParams.delete("startIndex");
+    if (category) urlParams.set("category", category._id);
+    else urlParams.delete("category");
+    setSidebardata((prev) => ({ ...prev, category: category ? category._id : "" }));
+    navigate(`/search?${urlParams.toString()}`);
+  };
+
+  // مسار الفئة المختارة (من الجذر إليها) وأبناؤها المباشرون، لعرضهما فوق النتائج
+  const selectedCategory = useMemo(
+    () => categories.find((cat) => String(cat._id) === String(sidebardata.category)),
+    [categories, sidebardata.category]
+  );
+  const categoryPath = useMemo(() => {
+    if (!selectedCategory) return [];
+    const byId = new Map(categories.map((cat) => [String(cat._id), cat]));
+    const ancestors = (selectedCategory.ancestors || [])
+      .map((id) => byId.get(String(id)))
+      .filter(Boolean);
+    return [...ancestors, selectedCategory];
+  }, [categories, selectedCategory]);
+  const subCategories = useMemo(
+    () =>
+      selectedCategory
+        ? categories.filter((cat) => String(cat.parentId) === String(selectedCategory._id))
+        : categories.filter((cat) => !cat.parentId),
+    [categories, selectedCategory]
+  );
 
   const onShowMoreClick = async () => {
     const numberOfListings = listings.length;
@@ -175,6 +228,22 @@ export default function Search() {
               onChange={handleChange}
             />
           </div>
+
+          {/* شجرة التصنيفات: من الفئة الأب إلى فروعها */}
+          {categories.length > 0 && (
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-bold text-slate-700 tracking-wide">
+                {t("search.categories")}
+              </label>
+              <div className="border border-slate-200 rounded-xl p-2 bg-white">
+                <CategoryBrowser
+                  categories={categories}
+                  selectedId={sidebardata.category}
+                  onSelect={handleCategorySelect}
+                />
+              </div>
+            </div>
+          )}
 
           {/* فلاتر النوع: أزرار الـ Chips */}
           <div className="flex flex-col gap-2.5">
@@ -291,9 +360,68 @@ export default function Search() {
 
       {/* قسم نتائج البحث */}
       <div className="flex-1 p-8 md:p-10">
-        <h1 className="text-2xl font-bold border-b border-slate-200 pb-4 text-slate-800 tracking-tight">
-          {t("search.results_title")}
-        </h1>
+        {/* مسار التصنيف (Breadcrumb) */}
+        {categoryPath.length > 0 && (
+          <nav className="flex flex-wrap items-center gap-1.5 text-xs mb-2">
+            <button
+              type="button"
+              onClick={() => handleCategorySelect(null)}
+              className="text-slate-500 hover:text-blue-600 font-medium cursor-pointer"
+            >
+              {t("search.all_categories")}
+            </button>
+            {categoryPath.map((cat, index) => (
+              <span key={cat._id} className="flex items-center gap-1.5">
+                <span className="text-slate-300">{isRtl ? "‹" : "›"}</span>
+                {index === categoryPath.length - 1 ? (
+                  <span className="font-semibold text-slate-700">{getCategoryLabel(cat, lang)}</span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => handleCategorySelect(cat)}
+                    className="text-slate-500 hover:text-blue-600 font-medium cursor-pointer"
+                  >
+                    {getCategoryLabel(cat, lang)}
+                  </button>
+                )}
+              </span>
+            ))}
+          </nav>
+        )}
+
+        <div className="flex items-baseline justify-between gap-4 border-b border-slate-200 pb-4">
+          <h1 className="text-2xl font-bold text-slate-800 tracking-tight">
+            {selectedCategory ? getCategoryLabel(selectedCategory, lang) : t("search.results_title")}
+          </h1>
+          {selectedCategory?.listingCount !== undefined && (
+            <span className="text-sm text-slate-400 font-medium shrink-0">
+              {t("search.listings_count", { count: selectedCategory.listingCount })}
+            </span>
+          )}
+        </div>
+
+        {/* الفئات الفرعية كبطاقات أفقية قابلة للتمرير (للجوال، حيث القائمة الجانبية بعيدة) */}
+        {subCategories.length > 0 && (
+          <div className="md:hidden flex gap-3 overflow-x-auto pt-4 pb-1 -mx-1 px-1">
+            {subCategories.map((cat) => {
+              return (
+                <button
+                  key={cat._id}
+                  type="button"
+                  onClick={() => handleCategorySelect(cat)}
+                  className="flex flex-col items-center gap-2 min-w-24 px-3 py-3 bg-white border border-slate-200 rounded-2xl shadow-sm active:scale-95 transition-all cursor-pointer"
+                >
+                  <span className="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
+                    <CategoryIcon category={cat} className="w-5 h-5" />
+                  </span>
+                  <span className="text-xs font-semibold text-slate-700 text-center leading-tight">
+                    {getCategoryLabel(cat, lang)}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 py-8">
           {!loading && listings.length === 0 && (

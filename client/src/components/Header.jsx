@@ -3,11 +3,14 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import apiClient from "../api/apiClient";
+import { CategoryMegaMenu, MobileCategoryMenu } from "./category/CategoryNavMenu";
 
 function Header() {
   const { currentUser } = useSelector((state) => state.user);
   const [searchTerm, setSearchTerm] = useState("");
   const [isOpen, setIsOpen] = useState(false);
+  const [categories, setCategories] = useState([]);
   const navigate = useNavigate();
   const location = useLocation();
   const { t, i18n } = useTranslation();
@@ -32,6 +35,13 @@ function Header() {
   useEffect(() => {
     setIsOpen(false);
   }, [location.pathname]);
+
+  useEffect(() => {
+    apiClient
+      .get("/api/categories")
+      .then(({ data }) => Array.isArray(data) && setCategories(data))
+      .catch(() => setCategories([]));
+  }, []);
 
   const toggleLanguage = () => {
     const nextLang = i18n.language === "ar" ? "en" : "ar";
@@ -76,6 +86,7 @@ function Header() {
               {t("nav_home")}
             </li>
           </Link>
+          <CategoryMegaMenu categories={categories} />
           <Link to="/about">
             <li className="hover:text-blue-600 transition-colors py-1 relative after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 hover:after:w-full after:bg-blue-600 after:transition-all">
               {t("nav_about")}
@@ -154,6 +165,7 @@ function Header() {
                 {t("nav_home")}
               </li>
             </Link>
+            <MobileCategoryMenu categories={categories} onNavigate={() => setIsOpen(false)} />
             <Link to="/about" onClick={() => setIsOpen(false)}>
               <li className="py-2 hover:text-blue-600 border-b border-slate-50 transition-colors">
                 {t("nav_about")}

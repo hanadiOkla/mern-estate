@@ -3,10 +3,33 @@ import Listing from '../models/listing.model.js';
 import { buildCategoryTree } from '../utils/categoryTree.js';
 
 // الحصول على كل التصنيفات النشطة (قائمة مسطّحة)
+// ?withCounts=true يضيف listingCount = عدد الإعلانات النشطة في الفئة وكل فروعها
 export const getCategories = async (req, res, next) => {
   try {
-    const categories = await Category.find({ isActive: true }).select('-__v');
-    res.status(200).json(categories);
+    const categories = await Category.find({ isActive: true }).select('-__v').sort({ createdAt: 1 }).lean();
+    if (req.query.withCounts !== 'true') {
+      return res.status(200).json(categories);
+    }
+
+    const directCounts = await Listing.aggregate([
+      { $match: { status: 'active' } },
+      { $group: { _id: '$category', count: { $sum: 1 } } },
+    ]);
+
+    // ترحيل عدد كل فئة إلى أجدادها عبر حقل ancestors، حتى يعكس عدد الأب مجموع فروعه
+    const ancestorsById = new Map(categories.map((cat) => [String(cat._id), cat.ancestors || []]));
+    const totals = new Map();
+    for (const { _id, count } of directCounts) {
+      const id = String(_id);
+      if (!ancestorsById.has(id)) continue;
+      for (const key of [id, ...ancestorsById.get(id).map(String)]) {
+        totals.set(key, (totals.get(key) || 0) + count);
+      }
+    }
+
+    res.status(200).json(
+      categories.map((cat) => ({ ...cat, listingCount: totals.get(String(cat._id)) || 0 }))
+    );
   } catch (error) {
     next(error);
   }
@@ -79,6 +102,9 @@ export const createCategory = async (req, res, next) => {
     await newCategory.save();
     res.status(201).json({ success: true, category: newCategory });
   } catch (error) {
+    if (error.code === 11000) {
+      return res.status(400).json({ success: false, message: 'الرابط الدائم (slug) مستخدم من قبل فئة أخرى' });
+    }
     if (error.name === 'ValidationError' || /مرجعية دائرية|أباً لنفسها|الفئة الأب غير موجودة/.test(error.message)) {
       return res.status(400).json({ success: false, message: error.message });
     }
@@ -127,6 +153,9 @@ export const updateCategory = async (req, res, next) => {
 
     res.status(200).json({ success: true, category });
   } catch (error) {
+    if (error.code === 11000) {
+      return res.status(400).json({ success: false, message: 'الرابط الدائم (slug) مستخدم من قبل فئة أخرى' });
+    }
     if (error.name === 'ValidationError' || /مرجعية دائرية|أباً لنفسها|الفئة الأب غير موجودة/.test(error.message)) {
       return res.status(400).json({ success: false, message: error.message });
     }

@@ -15,7 +15,7 @@ function ChevronIcon({ expanded }) {
   );
 }
 
-function CategoryNode({ node, depth, lang, isRtl, onAddChild, onToggleStatus, onDelete }) {
+function CategoryNode({ node, depth, lang, isRtl, onAddChild, onEdit, onToggleStatus, onDelete }) {
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState(depth === 0);
   const hasChildren = node.children?.length > 0;
@@ -64,6 +64,13 @@ function CategoryNode({ node, depth, lang, isRtl, onAddChild, onToggleStatus, on
           </button>
           <button
             type="button"
+            onClick={() => onEdit(node)}
+            className="text-[11px] font-bold text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+          >
+            {t("admin.edit", "تعديل")}
+          </button>
+          <button
+            type="button"
             onClick={() => onToggleStatus(node)}
             className="text-[11px] font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
           >
@@ -89,6 +96,8 @@ function CategoryNode({ node, depth, lang, isRtl, onAddChild, onToggleStatus, on
               lang={lang}
               isRtl={isRtl}
               onAddChild={onAddChild}
+          onEdit={onEdit}
+              onEdit={onEdit}
               onToggleStatus={onToggleStatus}
               onDelete={onDelete}
             />
@@ -100,8 +109,8 @@ function CategoryNode({ node, depth, lang, isRtl, onAddChild, onToggleStatus, on
 }
 
 // عرض شجري قابل للطي (collapsible) لتصنيفات متداخلة بلا حد أقصى للعمق،
-// مع أزرار إجراءات (إضافة فرع / تفعيل-تعطيل / حذف) عند مرور الفأرة على كل فئة
-export default function CategoryTreeView({ categories, onAddChild, onToggleStatus, onDelete }) {
+// مع أزرار إجراءات (إضافة فرع / تعديل / تفعيل-تعطيل / حذف) عند مرور الفأرة على كل فئة
+export default function CategoryTreeView({ categories, onAddChild, onEdit, onToggleStatus, onDelete }) {
   const { t, i18n } = useTranslation();
   const lang = i18n.language?.startsWith("ar") ? "ar" : "en";
   const isRtl = i18n.dir() === "rtl" || i18n.language?.startsWith("ar");
@@ -126,6 +135,7 @@ export default function CategoryTreeView({ categories, onAddChild, onToggleStatu
           lang={lang}
           isRtl={isRtl}
           onAddChild={onAddChild}
+          onEdit={onEdit}
           onToggleStatus={onToggleStatus}
           onDelete={onDelete}
         />
