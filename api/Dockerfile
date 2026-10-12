@@ -10,7 +10,7 @@ COPY package*.json ./
 RUN npm ci --only=production
 
 # نسخ ملفات الباك إند مع نقل ملكية الملفات للمستخدم الآمن node
-COPY --chown=node:node ./api .
+COPY --chown=node:node ./api ./api
 
 # التحول للمستخدم غير الصلاحي لحظر أي اختراق محتمل للسيرفر
 USER node
@@ -18,4 +18,4 @@ USER node
 ENV PORT=3000
 EXPOSE 3000
 
-CMD ["node", "index.js"]
+CMD ["node", "api/index.js"]
